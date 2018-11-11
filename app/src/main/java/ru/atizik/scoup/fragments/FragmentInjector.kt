@@ -3,7 +3,6 @@ package ru.atizik.scoup.fragments
 import android.arch.lifecycle.LifecycleOwner
 import android.os.Bundle
 import android.support.v4.app.Fragment
-import ru.atizik.scoup.di.ScreenModule
 import toothpick.Scope
 import toothpick.Toothpick
 import toothpick.config.Module
@@ -28,7 +27,7 @@ interface FragmentInjector:LateinitFragment {
  */
 class FragmentInjectorImpl(override val scopeBuilder: (Scope.() -> Unit)? = null,
                            override var scopeTag: String = UUID.randomUUID().toString(),
-                           override val modules: MutableList<Module> = mutableListOf(ScreenModule())
+                           override val modules: MutableList<Module> = mutableListOf()
 ) : FragmentDelegate(), FragmentInjector {
 
     override var parentScopes: Lazy<List<Any>> = lazy(LazyThreadSafetyMode.NONE) {
