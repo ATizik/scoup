@@ -8,14 +8,14 @@ import ru.atizik.scoup.viewmodel.BaseCoordinator
 abstract class BaseFragment<V : BaseCoordinator>(
     clazz: Class<V>,
     private val injector: FragmentInjector = FragmentInjectorImpl(),
-    private val viewModelOwner: CoordinatorOwner<V> = CoordinatorOwnerImpl(clazz),
+    private val coordinatorOwner: CoordinatorOwner<V> = CoordinatorOwnerImpl(clazz),
     private val toolbarDelegate: ToolbarDelegate? = ToolbarDelegateImpl()
 ) : Fragment() {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
         injector.init(this)
-        viewModelOwner.init(this)
+        coordinatorOwner.init(this)
         toolbarDelegate?.init(this)
     }
 

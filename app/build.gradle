@@ -1,10 +1,19 @@
 apply plugin: 'com.android.library'
-apply plugin: 'com.github.dcendents.android-maven'
-apply plugin: 'com.jfrog.bintray'
+
+apply plugin: 'com.novoda.bintray-release'
 
 apply plugin: 'kotlin-android'
 
 apply plugin: 'kotlin-android-extensions'
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.novoda:bintray-release:0.9'
+    }
+}
 
 android {
     compileSdkVersion 28
@@ -21,14 +30,9 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-}
-buildscript {
-    repositories {
-        jcenter()
-    }
-    dependencies {
-        classpath 'com.github.dcendents:android-maven-gradle-plugin:1.4.1'
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
+
+    lintOptions {
+        warning 'InvalidPackage'
     }
 }
 
@@ -38,12 +42,11 @@ dependencies {
     //Kotlin
     implementation"org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     //Coroutines
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:0.30.2'
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:0.30.2'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.0.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.0.0'
     //Lifecycle
     implementation 'android.arch.lifecycle:common-java8:1.1.1'
 
-    //DI
     //DI
     implementation 'com.github.stephanenicolas.toothpick:toothpick-runtime:1.1.3'
     implementation 'com.github.stephanenicolas.toothpick:smoothie:1.1.3'
@@ -62,110 +65,15 @@ dependencies {
 
 }
 
-ext {
-    bintrayRepo = 'Scoup'
-    bintrayName = 'atizik'
 
-    publishedGroupId = 'ru.atizik.scoup'
-    libraryName = 'Scoup'
-    artifact = 'scoup'
-
-    libraryDescription = 'Scope oriented framework for Android development'
-
-    siteUrl = 'https://github.com/ATizik/scoup'
-    gitUrl = 'https://github.com/ATizik/scoup.git'
-
-    libraryVersion = '0.3.0'
-
-    developerId = 'atizik'
-    developerName = 'Alexander Tizik'
-    developerEmail = 'alexander.tizik@gmail.com'
-
-    licenseName = 'The Apache Software License, Version 2.0'
-    licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-    allLicenses = ["Apache-2.0"]
+publish {
+    userOrg = 'atizik'
+    groupId = 'ru.atizik'
+    repoName = 'Scoup'
+    artifactId = 'scoup'
+    publishVersion = '0.3.2'
+    desc = 'Scope oriented framework for Android development'
+    website = 'https://github.com/ATizik/scoup'
 }
 
 
-
-/************************/
-group = publishedGroupId
-version = libraryVersion
-
-install {
-    repositories.mavenInstaller {
-        pom.project {
-            packaging 'aar'
-            groupId publishedGroupId
-            artifactId artifact
-
-            name libraryName
-            description libraryDescription
-            url siteUrl
-
-            licenses {
-                license {
-                    name licenseName
-                    url licenseUrl
-                }
-            }
-            developers {
-                developer {
-                    id developerId
-                    name developerName
-                    email developerEmail
-                }
-            }
-            scm {
-                connection gitUrl
-                developerConnection gitUrl
-                url siteUrl
-            }
-        }
-    }
-}
-
-task sourcesJar(type: Jar) {
-    classifier = 'sources'
-    from android.sourceSets.main.java.srcDirs
-}
-
-/*task javadoc(type: Javadoc) {
-    source = android.sourceSets.main.java.srcDirs
-    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
-}
-
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
-    from javadoc.destinationDir
-}*/
-
-artifacts {
-    //archives javadocJar
-    archives sourcesJar
-}
-
-Properties properties = new Properties()
-properties.load(project.rootProject.file('local.properties').newDataInputStream())
-
-bintray {
-    user = properties.getProperty("bintray.user")
-    key = properties.getProperty("bintray.apikey")
-
-    configurations = ['archives']
-    pkg {
-        repo = bintrayRepo
-        name = bintrayName
-        desc = libraryDescription
-        websiteUrl = siteUrl
-        vcsUrl = gitUrl
-        licenses = allLicenses
-        dryRun = false
-        publish = true
-        override = false
-        publicDownloadNumbers = true
-        version {
-            desc = libraryDescription
-        }
-    }
-}

@@ -2,9 +2,14 @@ package ru.atizik.scoup.fragments
 
 import android.arch.lifecycle.GenericLifecycleObserver
 import android.arch.lifecycle.Lifecycle
+import android.arch.lifecycle.LifecycleOwner
 import android.support.v4.app.Fragment
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.launch
+import ru.atizik.scoup.ConflatedState
+import ru.atizik.scoup.Lce
 import ru.atizik.scoup.di.getCoordinatorInstance
 import ru.atizik.scoup.viewmodel.BaseCoordinator
 
@@ -13,6 +18,9 @@ interface CoordinatorOwner<out V : BaseCoordinator>:LateinitFragment {
     val coordinator: V
     val compDisp: CompositeDisposable
 
+    fun <T> ConflatedState<T>.observe(lifecycleOwner: LifecycleOwner, observer: ReceiveChannel<Lce<T>>.() -> Unit) = launch {
+        observe(lifecycleOwner,compDisp).apply(observer)
+    }
 }
 
 class CoordinatorOwnerImpl<out V : BaseCoordinator>(
