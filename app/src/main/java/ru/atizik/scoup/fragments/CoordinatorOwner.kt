@@ -7,6 +7,7 @@ import android.support.v4.app.Fragment
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.launch
 import ru.atizik.scoup.ConflatedState
 import ru.atizik.scoup.Lce
@@ -19,7 +20,7 @@ interface CoordinatorOwner<out V : BaseCoordinator>:LateinitFragment {
     val compDisp: CompositeDisposable
 
     fun <T> ConflatedState<T>.observe(observer: ReceiveChannel<Lce<T>>.() -> Unit) = launch {
-        observe(fragmentDelegate.viewLifecycleOwner,compDisp).apply(observer)
+        observe(fragmentDelegate.viewLifecycleOwner,compDisp).apply(observer).consumeEach {  }
     }
 }
 
