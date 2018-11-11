@@ -18,8 +18,8 @@ interface CoordinatorOwner<out V : BaseCoordinator>:LateinitFragment {
     val coordinator: V
     val compDisp: CompositeDisposable
 
-    fun <T> ConflatedState<T>.observe(lifecycleOwner: LifecycleOwner, observer: ReceiveChannel<Lce<T>>.() -> Unit) = launch {
-        observe(lifecycleOwner,compDisp).apply(observer)
+    fun <T> ConflatedState<T>.observe(observer: ReceiveChannel<Lce<T>>.() -> Unit) = launch {
+        observe(fragmentDelegate.viewLifecycleOwner,compDisp).apply(observer)
     }
 }
 

@@ -5,6 +5,7 @@ import android.support.v4.app.Fragment
 
 interface LateinitFragment {
     fun init(fragment: Fragment)
+    var fragmentDelegate: Fragment
 }
 
 /**
@@ -13,7 +14,7 @@ interface LateinitFragment {
 abstract class FragmentDelegate : LifecycleOwner, DefaultLifecycleObserver, LateinitFragment {
 
     val lifecycle = LifecycleRegistry(this)
-    lateinit var fragmentDelegate: Fragment
+    override lateinit var fragmentDelegate: Fragment
 
     override fun getLifecycle(): Lifecycle = lifecycle
 
@@ -24,16 +25,8 @@ abstract class FragmentDelegate : LifecycleOwner, DefaultLifecycleObserver, Late
     }
 
     /**
-     *  Always called on initialization
+     *  Always called on initialization, unlike other lifecycle methods
+     *  than can be skipped if [init] was called later in lifecycle
      */
     open fun onInit(fragment: Fragment) {}
-}
-
-infix fun <T : FragmentDelegate> T.to(list: MutableList<FragmentDelegate>): T {
-    list += this
-    return this
-}
-
-fun List<FragmentDelegate>.init(fragment: Fragment) {
-    forEach { it.init(fragment) }
 }
