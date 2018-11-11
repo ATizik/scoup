@@ -2,15 +2,10 @@
 Scoup is a scope oriented framework for Android development
 
 Features:
-
-1.ConflatedState - sane LiveData replacement, built on coroutines, with RxJava extensions
-
-2.Coordinators - scope oriented configuration change resistant component(a.k.a ViewModel in Android Architecture Components terminology)
-
-3.Lce(Loading-Content-Error) containers built-in in ConflatedState 
-
-
-4.BaseFragment built on delegates principle - keep your BaseFragment thin and keep everything flexible through configurable delegates
+1. ConflatedState - sane LiveData replacement, built on coroutines, with RxJava extensions
+2. Coordinators - scope oriented configuration change resistant component(a.k.a ViewModel in Android Architecture Components terminology)
+3. Lce(Loading-Content-Error) containers built-in in ConflatedState 
+4. BaseFragment built on delegates principle - keep your BaseFragment thin and keep everything flexible through configurable delegates
 
 Coming in future versions:
 1. onSaveInstance state method exposed to Coordinators
