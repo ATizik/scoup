@@ -29,10 +29,10 @@ class ConflatedState<T>(value: Lce<T> = Lce.Loading()) : LifecycleObserver,Corou
     private operator fun getValue(thisRef: Any, property: KProperty<*>): Lce<T> = conflatedBroadcastChannel.value
 
 
-    suspend fun observe(lifecycleOwner: LifecycleOwner, compositeDisposable: CompositeDisposable) = suspendCancellableCoroutine<ReceiveChannel<Lce<T>>> {
+    suspend fun observe(lifecycle: Lifecycle, compositeDisposable: CompositeDisposable) = suspendCancellableCoroutine<ReceiveChannel<Lce<T>>> {
         lateinit var receiveChannel: ReceiveChannel<Lce<T>>
         /**If [observe] was called later than start state, this check will open subscription anyway*/
-        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED) && !lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.DESTROYED)) {
+        if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED) && !lifecycle.currentState.isAtLeast(Lifecycle.State.DESTROYED)) {
             receiveChannel = conflatedBroadcastChannel.openSubscription()
             it.resume(receiveChannel)
         }
@@ -40,7 +40,7 @@ class ConflatedState<T>(value: Lce<T> = Lce.Loading()) : LifecycleObserver,Corou
         /**clears subscriptions and closes [receiveChannel]
          * original [conflatedBroadcastChannel] is not closed since it usually belongs to an entity
          * that will outlive [lifecycleOwner]*/
-        lifecycleOwner.lifecycle.addObserver(
+        lifecycle.addObserver(
             object : DefaultLifecycleObserver {
                 override fun onStart(owner: LifecycleOwner) {
                     if (it.isCompleted.not()) {

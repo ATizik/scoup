@@ -19,9 +19,9 @@ interface CoordinatorOwner<out V : BaseCoordinator>:LateinitFragment {
     val coordinator: V
     val compDisp: CompositeDisposable
 
-    fun <T> ConflatedState<T>.observe(observer: ReceiveChannel<Lce<T>>.() -> Unit) = launch {
-        observe(fragmentDelegate.viewLifecycleOwner,compDisp).apply(observer).consumeEach {  }
-    }
+    suspend fun <T> ConflatedState<T>.observe(viewLifecycle: Lifecycle = fragmentDelegate.viewLifecycleOwner.lifecycle) =
+        observe(viewLifecycle,compDisp)
+
 }
 
 class CoordinatorOwnerImpl<out V : BaseCoordinator>(

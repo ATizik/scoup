@@ -2,9 +2,7 @@ package ru.atizik.scoup
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.channels.consumeEach
-import kotlinx.coroutines.channels.map
+import kotlinx.coroutines.channels.*
 import kotlinx.coroutines.launch
 
 /**
@@ -88,6 +86,7 @@ inline fun <T> ReceiveChannel<Lce<T>>.onLoading(crossinline f: T?.() -> Unit): R
     }
 
 //TODO: Document and/or refactor
+//This is temporary until full fledged streams are introduced in coroutines
 inline fun <T> ReceiveChannel<Lce<T>>.subscribe() = GlobalScope.launch { consumeEach {  } }
 
 

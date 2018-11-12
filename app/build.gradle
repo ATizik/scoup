@@ -60,6 +60,7 @@ dependencies {
 
     implementation 'com.android.support:appcompat-v7:28.0.0'
     testImplementation 'junit:junit:4.12'
+    testImplementation "io.mockk:mockk:1.8.9"
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 
@@ -71,7 +72,7 @@ publish {
     groupId = 'ru.atizik'
     repoName = 'Scoup'
     artifactId = 'scoup'
-    publishVersion = '0.3.4'
+    publishVersion = '0.3.5'
     desc = 'Scope oriented framework for Android development'
     website = 'https://github.com/ATizik/scoup'
 }
