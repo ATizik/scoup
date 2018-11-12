@@ -1,4 +1,10 @@
 # scoup
+[ ![Download](https://api.bintray.com/packages/atizik/Scoup/scoup/images/download.svg?version=0.3.4) ](https://bintray.com/atizik/Scoup/scoup/0.3.4/link)
+
+```
+compile 'ru.atizik:scoup:0.3.4'
+```
+
 Scoup is a scope oriented framework for Android development
 
 Features:
