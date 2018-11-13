@@ -7,10 +7,8 @@ import android.support.v4.app.Fragment
 import io.mockk.mockk
 import io.mockk.verify
 import io.reactivex.disposables.CompositeDisposable
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.consumeEach
 import org.junit.Test
 
 import org.junit.Assert.*
@@ -42,18 +40,6 @@ class ExampleUnitTest {
 
     @Test
     fun addition_isCorrect() = runBlocking(Dispatchers.Default) {
-/*
-        var some = "not_some"
-        val lifecycle = LifecycleRegistry(mockk<LifecycleOwner>())
-        lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
-        val confl = ConflatedState(Lce.Success(0))
-        launch(Dispatchers.IO) {
-            with(crdOwner()) {
-                confl.observe(lifecycle).onContent { some = "someaa" }.onContent { some = "somegg" }.onContent { some = "somesd" }.onContent { some = "some" }.subscribe()
-            }
-        }
 
-        delay(1500)
-        assert(some == "some")*/
     }
 }
