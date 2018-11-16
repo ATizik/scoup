@@ -20,6 +20,9 @@ class ConflatedState<T>(value: Lce<T>? = Lce.Loading()) : LifecycleObserver, Cor
 
     var value by this
 
+    val valueOrNull
+        get() = conflatedBroadcastChannel.valueOrNull
+
     private operator fun setValue(thisRef: Any, property: KProperty<*>, value: Lce<T>) {
         conflatedBroadcastChannel.offer(value)
     }
