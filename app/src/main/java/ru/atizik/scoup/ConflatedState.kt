@@ -14,9 +14,9 @@ import kotlin.coroutines.resume
 import kotlin.reflect.KProperty
 
 //TODO: Document
-class ConflatedState<T>(value: Lce<T> = Lce.Loading()) : LifecycleObserver, CoroutineScope {
+class ConflatedState<T>(value: Lce<T>? = Lce.Loading()) : LifecycleObserver, CoroutineScope {
     override val coroutineContext: CoroutineContext = Job()
-    private val conflatedBroadcastChannel = ConflatedBroadcastChannel(value)
+    private val conflatedBroadcastChannel = value?.let { ConflatedBroadcastChannel(it) } ?: ConflatedBroadcastChannel()
 
     var value by this
 

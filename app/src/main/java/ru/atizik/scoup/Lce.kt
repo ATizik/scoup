@@ -80,7 +80,7 @@ inline fun <T> ReceiveChannel<Lce<T>>.onError(crossinline f: Throwable.(cache: T
 
 inline fun <T> ReceiveChannel<Lce<T>>.onLoading(crossinline f: T?.() -> Unit): ReceiveChannel<Lce<T>> =
     map(Dispatchers.Main) {
-        if (this is Lce.Loading<*>)
+        if (it is Lce.Loading<*>)
             f(it.data)
         it
     }
