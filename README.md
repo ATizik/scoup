@@ -1,8 +1,9 @@
 # scoup
-[ ![Download](https://api.bintray.com/packages/atizik/Scoup/scoup/images/download.svg?version=0.3.4) ](https://bintray.com/atizik/Scoup/scoup/0.3.4/link)
+[ ![Download](https://api.bintray.com/packages/atizik/Scoup/scoup/images/download.svg) ](https://bintray.com/atizik/Scoup/scoup/_latestVersion)
 
 ```
-compile 'ru.atizik:scoup:0.3.4'
+maven { url "https://dl.bintray.com/atizik/Scoup" }
+compile 'ru.atizik:scoup:X.X.X' - look at badge above for latest version
 ```
 
 Scoup is a scope oriented framework for Android development
