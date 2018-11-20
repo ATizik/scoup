@@ -3,17 +3,23 @@ package ru.atizik.scoup.fragments
 import android.arch.lifecycle.LifecycleOwner
 import android.os.Bundle
 import android.support.v4.app.Fragment
+import ru.atizik.scoup.di.bind
+import ru.atizik.scoup.di.module
 import toothpick.Scope
 import toothpick.Toothpick
 import toothpick.config.Module
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
+import javax.inject.Inject
+import javax.inject.Singleton
 
 const val appScope = "APP_SCOPE"
 const val scopeArg = "SCOPE_TAG_ARG"
 
 interface FragmentInjector:LateinitFragment {
     val modules: MutableList<Module>
-    val parentScopes: Lazy<List<Any>>
+    val parentScopes: (()->List<Any>)?
     val scopeBuilder: (Scope.() -> Unit)?
     val scopeTag: String
 }
@@ -27,15 +33,10 @@ interface FragmentInjector:LateinitFragment {
  */
 class FragmentInjectorImpl(override val scopeBuilder: (Scope.() -> Unit)? = null,
                            override var scopeTag: String = UUID.randomUUID().toString(),
-                           override val modules: MutableList<Module> = mutableListOf()
+                           override val modules: MutableList<Module> = mutableListOf(),//get parent scope during instantiation?
+                           override val parentScopes: (() -> List<Any>)? = null,
+                           val injector:
 ) : FragmentDelegate(), FragmentInjector {
-
-    override var parentScopes: Lazy<List<Any>> = lazy(LazyThreadSafetyMode.NONE) {
-        listOf(
-            //get parent scope during instantiation?
-            fragmentDelegate.parentFragment?.getScopeTag() ?: appScope
-        )
-    }
 
     /**
      * Generates unique scopeTag on first initialization and saves it in arguments bundle
@@ -53,25 +54,52 @@ class FragmentInjectorImpl(override val scopeBuilder: (Scope.() -> Unit)? = null
             fragment.arguments = args
         }
 
-        inject(parentScopes.value, modules, fragment, scopeTag, scopeBuilder)
+        injector.inject(parentScopes?.invoke() ?: listOf(fragmentDelegate.parentFragment?.getScopeTag() ?: appScope), modules, fragment, scopeTag, scopeBuilder)
     }
 
     override fun onDestroy(owner: LifecycleOwner) {
         if (fragmentDelegate.isRemovingCompat()) {
-            close(scopeTag)
+            injector.close(scopeTag)
         }
     }
 }
 
 fun Fragment.getScopeTag(): String = arguments!!.getString(scopeArg)!!
 
-fun inject(scopes: List<Any>, modules: List<Module>, obj: Any, scopeTag: Any, scopeBuilder: (Scope.()->Unit)?) {
-    val scope = Toothpick.openScopes(*(scopes + scopeTag).toTypedArray())
-    scopeBuilder?.invoke(scope)
-    scope.installModules(*modules.toTypedArray())
-    Toothpick.inject(obj, scope)
+
+interface Injector {
+    fun inject(scopes: List<Any>, modules: List<Module>, obj: Any, scopeTag: Any, scopeBuilder: (Scope.() -> Unit)?)
+    fun close(injectionRecipientTag: Any)
 }
 
-fun close(injectionRecipientTag: Any) {
-    Toothpick.closeScope(injectionRecipientTag)
+class SimpleInjector() : Injector {
+    override fun inject(scopes: List<Any>, modules: List<Module>, obj: Any, scopeTag: Any, scopeBuilder: (Scope.()->Unit)?) {
+        val scope = Toothpick.openScopes(*(scopes + scopeTag).toTypedArray())
+        scopeBuilder?.invoke(scope)
+        scope.installModules(*modules.toTypedArray())
+        Toothpick.inject(obj, scope)
+    }
+
+    override fun close(injectionRecipientTag: Any) {
+        Toothpick.closeScope(injectionRecipientTag)
+    }
+}
+
+class FlatInjector() : Injector {
+    override fun inject(scopes: List<Any>, modules: List<Module>, obj: Any, scopeTag: Any, scopeBuilder: (Scope.()->Unit)?) {
+        val scope = Toothpick.openScopes(*(scopes + scopeTag).toTypedArray())
+        module { bind().apply {sin} }
+        scopeBuilder?.invoke(scope)
+        scope.installModules(*modules.toTypedArray())
+        Toothpick.inject(obj, scope)
+    }
+
+    override fun close(injectionRecipientTag: Any) {
+        Toothpick.closeScope(injectionRecipientTag)
+    }
+}
+
+@Singleton
+class ScopeCounter @Inject constructor() {
+    val map = ConcurrentHashMap<Any,    >()
 }
