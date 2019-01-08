@@ -34,19 +34,19 @@ interface LceModel:DisposableScope {
     ) = subscribe({ onComplete() }, { onError(it) }).addTo(disposable)
 
     @SchedulerSupport(SchedulerSupport.NONE)
-    fun <T : Any> Single<T>.toLce(lce: ConflatedState<T>) =
+    fun <T : Any> Single<T>.toLce(lce: ConflatedState<Lce<T>>) =
         subscribeBy(
             onSuccess = { lce.value = Lce.Success(it) },
             onError = { lce.value = Lce.Error(it, lce.valueOrNull?.data) })
 
     @SchedulerSupport(SchedulerSupport.NONE)
-    fun <T : Any> Observable<T>.toLce(lce: ConflatedState<T>) =
+    fun <T : Any> Observable<T>.toLce(lce: ConflatedState<Lce<T>>) =
         subscribeBy(
             onNext = { lce.value = Lce.Success(it) },
             onError = { lce.value = Lce.Error(it, lce.valueOrNull?.data) })
 
     @SchedulerSupport(SchedulerSupport.NONE)
-    fun Completable.toLce(lce: ConflatedState<Unit>) =
+    fun Completable.toLce(lce: ConflatedState<Lce<Unit>>) =
         subscribeBy(
             onComplete = { lce.value = Lce.Success(Unit) },
             onError = { lce.value = Lce.Error(it, Unit) })
