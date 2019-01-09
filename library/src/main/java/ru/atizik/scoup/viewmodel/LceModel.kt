@@ -6,11 +6,32 @@ import io.reactivex.Single
 import io.reactivex.annotations.SchedulerSupport
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.addTo
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.map
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import ru.atizik.scoup.ConflatedState
 import ru.atizik.scoup.Lce
+import kotlin.coroutines.CoroutineContext
 
-interface DisposableScope {
+interface DisposableScope:CoroutineScope {
     val disposable: CompositeDisposable
+    override val coroutineContext: CoroutineContext
+
+    fun <E> ReceiveChannel<E>.onEach(function: (E) -> Unit): ReceiveChannel<E> {
+        return map(Dispatchers.Main) {
+            function(it)
+            it
+        }
+    }
+
+    fun ReceiveChannel<*>.subscribe() = launch {
+        while (isActive) {
+            receive()
+        }
+    }
 }
 
 //TODO: Document

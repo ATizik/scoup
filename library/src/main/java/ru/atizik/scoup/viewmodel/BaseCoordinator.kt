@@ -15,13 +15,14 @@ import kotlin.coroutines.CoroutineContext
 
 
 open class BaseCoordinator(
-    private val errorHandler: (Throwable) -> Unit,
+    private val errorHandler: ErrorHandler,
     override val coroutineContext: CoroutineContext = SupervisorJob()
 ) : Disposable, CoroutineScope, DisposableScope, LceModel {
 
     override val disposable = CompositeDisposable()
 
     private val lceModel = object : LceModel {
+        override val coroutineContext: CoroutineContext = this@BaseCoordinator.coroutineContext
         override val disposable: CompositeDisposable = this@BaseCoordinator.disposable
     }
 
@@ -52,3 +53,5 @@ open class BaseCoordinator(
     }
 
 }
+
+interface ErrorHandler:(Throwable)->Unit

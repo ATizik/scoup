@@ -2,6 +2,7 @@ package ru.atizik.scoup.fragments
 
 import android.arch.lifecycle.*
 import android.support.v4.app.Fragment
+import kotlinx.coroutines.CoroutineScope
 
 interface LateinitFragment {
     fun init(fragment: Fragment)

@@ -6,6 +6,8 @@ import android.arch.lifecycle.LifecycleOwner
 import android.support.v4.app.Fragment
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.launch
@@ -13,14 +15,16 @@ import ru.atizik.scoup.ConflatedState
 import ru.atizik.scoup.Lce
 import ru.atizik.scoup.di.getCoordinatorInstance
 import ru.atizik.scoup.viewmodel.BaseCoordinator
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.coroutineContext
 
 //TODO:Document
 interface CoordinatorOwner<out V : BaseCoordinator>:LateinitFragment {
     val coordinator: V
     val compDisp: CompositeDisposable
 
-    suspend fun <T> ConflatedState<T>.observe(viewLifecycle: Lifecycle = fragmentDelegate.viewLifecycleOwner.lifecycle) =
-        observe(viewLifecycle,compDisp)
+    fun <T> ConflatedState<T>.observe(viewLifecycle: Lifecycle = fragmentDelegate.viewLifecycleOwner.lifecycle, coroutineContext: CoroutineContext = (fragmentDelegate as CoroutineScope).coroutineContext) =
+        observe(viewLifecycle,compDisp, coroutineContext)
 
 }
 

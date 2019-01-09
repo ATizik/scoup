@@ -13,8 +13,8 @@ import kotlin.coroutines.resume
 import kotlin.reflect.KProperty
 
 //TODO: Document
-class ConflatedState<T>(value: T? = null) : LifecycleObserver, CoroutineScope {
-    override val coroutineContext: CoroutineContext = Job()
+class ConflatedState<T>(value: T? = null) : LifecycleObserver {
+    //override val coroutineContext: CoroutineContext = Job()
     private val conflatedBroadcastChannel = value?.let { ConflatedBroadcastChannel(it) } ?: ConflatedBroadcastChannel()
 
     var value by this
@@ -30,16 +30,14 @@ class ConflatedState<T>(value: T? = null) : LifecycleObserver, CoroutineScope {
 
     fun openSubscription() = conflatedBroadcastChannel.openSubscription()
 
-    fun observe(lifecycle: Lifecycle, compositeDisposable: CompositeDisposable): ReceiveChannel<T> {
+    fun observe(lifecycle: Lifecycle, compositeDisposable: CompositeDisposable, coroutineContext: CoroutineContext): ReceiveChannel<T> {
         var active = with(lifecycle.currentState) {
             isAtLeast(Lifecycle.State.STARTED) && !isAtLeast(Lifecycle.State.DESTROYED)
         }
         val someChannel = conflatedBroadcastChannel.openSubscription().broadcast()
-        val receiveChannel = someChannel.openSubscription().dropWhile { !active }
-
-        launch {
+        val receiveChannel = someChannel.openSubscription()
+        CoroutineScope(coroutineContext).launch(Dispatchers.Main) {
             var buffer: T? = null
-            conflatedBroadcastChannel.openSubscription().filter { !active }.consumeEach { buffer = it }
 
             /**clears subscriptions and closes [receiveChannel]
              * original [conflatedBroadcastChannel] is not closed since it usually belongs to an entity
@@ -57,11 +55,12 @@ class ConflatedState<T>(value: T? = null) : LifecycleObserver, CoroutineScope {
                     }
                     Lifecycle.Event.ON_DESTROY -> {
                         coroutineContext.cancelChildren()
-                        compositeDisposable.dispose()
+                        compositeDisposable.clear()
                         receiveChannel.cancel()
                     }
                 }
             })
+            conflatedBroadcastChannel.openSubscription().filter { !active }.consumeEach { buffer = it }
         }
         return receiveChannel
     }

@@ -2,7 +2,14 @@ package ru.atizik.scoup.fragments
 
 import android.content.Context
 import android.support.v4.app.Fragment
+import io.reactivex.disposables.CompositeDisposable
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.channels.map
 import ru.atizik.scoup.viewmodel.BaseCoordinator
+import ru.atizik.scoup.viewmodel.DisposableScope
+import kotlin.coroutines.CoroutineContext
 
 //TODO:Document
 abstract class BaseFragment<V : BaseCoordinator>(
@@ -10,7 +17,10 @@ abstract class BaseFragment<V : BaseCoordinator>(
     protected val injector: FragmentInjector = FragmentInjectorImpl(),
     protected val coordinatorOwner: CoordinatorOwner<V> = CoordinatorOwnerImpl(clazz),
     protected val toolbarDelegate: ToolbarDelegate? = ToolbarDelegateImpl()
-) : Fragment() {
+) : Fragment(), DisposableScope {
+
+    override val coroutineContext: CoroutineContext = SupervisorJob()
+    override val disposable: CompositeDisposable = CompositeDisposable()
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
