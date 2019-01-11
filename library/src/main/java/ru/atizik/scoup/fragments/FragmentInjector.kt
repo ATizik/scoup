@@ -111,7 +111,7 @@ class FlowInjector(private val flowTag: Any) : Injector {
         inject(scopes, scopeTag, scopeBuilder, modules, obj)
 
 
-        val flowScope = Toothpick.openScope(flowTag)
+        val flowScope = Toothpick.openScopes(scopes+flowTag)
         flowScope.installModules(module {
             bind(ScopeCounter::class.java).apply { singletonInScope() }
         })
