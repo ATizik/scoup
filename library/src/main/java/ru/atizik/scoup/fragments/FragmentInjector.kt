@@ -46,9 +46,8 @@ class FragmentInjectorImpl(
         if (scopeT != null) {
             scopeTag = scopeT
         } else {
-            val args = fragment.arguments ?: Bundle()
+            val args = fragment.arguments ?: Bundle().also { fragment.arguments = it }
             args.putString(scopeArg, scopeTag)
-            fragment.arguments = args
         }
 
         injector.inject(
@@ -111,10 +110,8 @@ class FlowInjector(private val flowTag: Any) : Injector {
         inject(scopes, scopeTag, scopeBuilder, modules, obj)
 
 
-        val flowScope = Toothpick.openScopes(scopes+flowTag)
-        flowScope.installModules(module {
-            bind(ScopeCounter::class.java).apply { singletonInScope() }
-        })
+        val flowScope = Toothpick.openScopes(*(scopes+flowTag).toTypedArray())
+        flowScope.installModules(*modules.toTypedArray())
         (flowScope.getInstance(ScopeCounter::class.java) as ScopeCounter)
             .set.add(scopeTag)
     }

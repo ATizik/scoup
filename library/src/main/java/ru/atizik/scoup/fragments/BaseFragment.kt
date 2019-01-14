@@ -29,5 +29,10 @@ abstract class BaseFragment<V : BaseCoordinator>(
         toolbarDelegate?.init(this)
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        coroutineContext.cancelChildren()
+        disposable.clear()
+    }
 
 }
