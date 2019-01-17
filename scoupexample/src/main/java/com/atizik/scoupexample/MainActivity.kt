@@ -14,10 +14,8 @@ import kotlinx.coroutines.channels.consume
 import kotlinx.coroutines.channels.consumeEach
 import ru.atizik.scoup.ConflatedState
 import ru.atizik.scoup.di.getCoordinatorInstance
-import ru.atizik.scoup.fragments.BaseFragment
-import ru.atizik.scoup.fragments.FlowInjector
-import ru.atizik.scoup.fragments.FragmentDelegate
-import ru.atizik.scoup.fragments.FragmentInjectorImpl
+import ru.atizik.scoup.di.getFlowCoordinatorInstance
+import ru.atizik.scoup.fragments.*
 import ru.atizik.scoup.subscribe
 import ru.atizik.scoup.viewmodel.BaseCoordinator
 import ru.atizik.scoup.viewmodel.ErrorHandler
@@ -63,8 +61,7 @@ class MainFragment : BaseFragment<MainCoordinator>(MainCoordinator::class.java) 
 class MainCoordinator @Inject constructor(errorHandler: ErrorHandler) : BaseCoordinator(errorHandler)
 
 class FirstFragment : BaseFragment<FirstCoordinator>(
-    FirstCoordinator::class.java,
-    injector = FragmentInjectorImpl(injector = FlowInjector(flowTag))
+    FirstCoordinator::class.java
 ) {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?) =
         inflater.inflate(R.layout.first_fragment, null)
@@ -85,16 +82,13 @@ class FirstFragment : BaseFragment<FirstCoordinator>(
 }
 
 
-class SecondFragment : BaseFragment<SecondCoordinator>(
-    SecondCoordinator::class.java,
-    injector = FragmentInjectorImpl(injector = FlowInjector(flowTag))
-) {
+class SecondFragment : BaseFragment<SecondCoordinator>(SecondCoordinator::class.java) {
 
 }
 
 class FirstCoordinator @Inject constructor(errorHandler: ErrorHandler) : BaseCoordinator(errorHandler) {
     val conflatedState = ConflatedState(1)
-    val some = getCoordinatorInstance<FlowCoordinator>(flowTag)
+    val some = getFlowCoordinatorInstance<FlowCoordinator>(appScope,flowTag)
 
     init {
         launch {
@@ -116,4 +110,6 @@ class FlowCoordinator @Inject constructor(errorHandler: ErrorHandler) : BaseCoor
     }
 }
 
-class SecondCoordinator @Inject constructor(errorHandler: ErrorHandler) : BaseCoordinator(errorHandler) {}
+class SecondCoordinator @Inject constructor(errorHandler: ErrorHandler) : BaseCoordinator(errorHandler) {
+    val some = getFlowCoordinatorInstance<FlowCoordinator>(appScope,flowTag)
+}

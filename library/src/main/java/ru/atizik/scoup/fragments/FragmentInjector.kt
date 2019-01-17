@@ -3,11 +3,15 @@ package ru.atizik.scoup.fragments
 import android.arch.lifecycle.LifecycleOwner
 import android.os.Bundle
 import android.support.v4.app.Fragment
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.disposables.Disposable
 import ru.atizik.scoup.di.module
+import ru.atizik.scoup.viewmodel.DisposableScope
 import toothpick.Scope
 import toothpick.Toothpick
 import toothpick.config.Module
 import java.util.*
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 
 const val appScope = "APP_SCOPE"
@@ -97,37 +101,6 @@ class SimpleInjector() : Injector {
     }
 }
 
-class FlowInjector(private val flowTag: Any) : Injector {
-    lateinit var scopeTag: Any
-    override fun inject(
-        scopes: List<Any>,
-        modules: List<Module>,
-        obj: Any,
-        scopeTag: Any,
-        scopeBuilder: (Scope.() -> Unit)?
-    ) {
-        this.scopeTag = scopeTag
-        inject(scopes, scopeTag, scopeBuilder, modules, obj)
-
-
-        val flowScope = Toothpick.openScopes(*(scopes+flowTag).toTypedArray())
-        flowScope.installModules(*modules.toTypedArray())
-        (flowScope.getInstance(ScopeCounter::class.java) as ScopeCounter)
-            .set.add(scopeTag)
-    }
-
-    override fun close(injectionRecipientTag: Any) {
-
-        Toothpick.closeScope(injectionRecipientTag)
-        val counter = Toothpick.openScope(flowTag).getInstance(ScopeCounter::class.java) as ScopeCounter
-        counter.set
-            .also { it.remove(scopeTag) }
-            .takeIf { it.size == 0 }
-            ?.let { Toothpick.closeScope(flowTag) }
-    }
-}
-
-
 private fun inject(
     scopes: List<Any>,
     scopeTag: Any,
@@ -141,8 +114,19 @@ private fun inject(
     Toothpick.inject(obj, scope)
 }
 
-class ScopeCounter @Inject constructor() {
-    val set = hashSetOf<Any>()
+class ScopeCounter @Inject constructor(): Disposable {
+    val disposables = CompositeDisposable()
+
+    override fun isDisposed(): Boolean = set.get() == 0
+
+
+    override fun dispose() {
+        if(set.decrementAndGet()<=0) {
+            disposables.clear()
+        }
+    }
+
+    val set = AtomicInteger(0)
 }
 
 //*-
