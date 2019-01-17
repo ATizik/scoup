@@ -47,7 +47,7 @@ fun <T : BaseCoordinator> getCoordinatorInstance(coordinatorClass: Class<T>, tag
  */
 @CheckReturnValue
 inline fun <reified T : BaseCoordinator> DisposableScope.getFlowCoordinatorInstance(vararg tag: Any): T =
-    with(Toothpick.openScopes(tag).applyModules(ViewModelModule(T::class.java))) {
+    with(Toothpick.openScopes(*tag).applyModules(ViewModelModule(T::class.java))) {
         val counter = getInstance(ScopeCounter::class.java)
         counter.set.incrementAndGet()
         counter.addTo(this@getFlowCoordinatorInstance.disposable)
