@@ -3,6 +3,7 @@ package ru.atizik.scoup.fragments
 import android.arch.lifecycle.GenericLifecycleObserver
 import android.arch.lifecycle.Lifecycle
 import android.arch.lifecycle.LifecycleOwner
+import android.os.Parcelable
 import android.support.v4.app.Fragment
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
@@ -34,8 +35,9 @@ class CoordinatorOwnerImpl<out V : BaseCoordinator>(
     override val compDisp: CompositeDisposable = CompositeDisposable()
 
     override val coordinator: V by lazy(LazyThreadSafetyMode.NONE) {
-        getCoordinatorInstance(
+        fragmentDelegate.getCoordinatorInstance(
             clazz,
+            (fragmentDelegate as? ArgumentReceiver<*>)?.argumentClazz,
             fragmentDelegate.getScopeTag()
         ).attachToScope(fragmentDelegate)
     }

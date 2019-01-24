@@ -1,5 +1,6 @@
 package ru.atizik.scoup.di
 
+import android.os.Parcelable
 import android.support.v4.app.Fragment
 import io.reactivex.annotations.CheckReturnValue
 import io.reactivex.disposables.Disposable
@@ -40,6 +41,21 @@ inline fun <reified T : BaseCoordinator> getCoordinatorInstance(tag: Any): T =
 fun <T : BaseCoordinator> getCoordinatorInstance(coordinatorClass: Class<T>, tag: Any): T =
     Toothpick.openScope(tag)
         .applyModules(ViewModelModule(coordinatorClass))
+        .getInstance(coordinatorClass)
+
+@CheckReturnValue
+fun <T : BaseCoordinator, A : Parcelable> Fragment.getCoordinatorInstance(
+    coordinatorClass: Class<T>,
+    argumentClass: Class<A>?,
+    tag: Any
+): T =
+    Toothpick.openScope(tag)
+        .applyModules(ViewModelModule(coordinatorClass))
+        .apply {
+            argumentClass
+                ?.let { ViewModelArgument(it, this@getCoordinatorInstance) }
+                ?.let { applyModules(it) }
+        }
         .getInstance(coordinatorClass)
 
 /**
