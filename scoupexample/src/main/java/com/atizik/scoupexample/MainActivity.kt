@@ -16,9 +16,11 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.consume
 import kotlinx.coroutines.channels.consumeEach
 import ru.atizik.scoup.ConflatedState
+import ru.atizik.scoup.Lce
 import ru.atizik.scoup.di.getCoordinatorInstance
 import ru.atizik.scoup.di.getFlowCoordinatorInstance
 import ru.atizik.scoup.fragments.*
+import ru.atizik.scoup.onContent
 import ru.atizik.scoup.subscribe
 import ru.atizik.scoup.viewmodel.BaseCoordinator
 import ru.atizik.scoup.viewmodel.ErrorHandler
@@ -29,7 +31,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        Log.d("SAVED:",savedInstanceState.toString())
+        Log.d("SAVED:", savedInstanceState.toString())
         if (savedInstanceState == null) {
             supportFragmentManager
                 .beginTransaction()
@@ -72,27 +74,30 @@ class FirstFragment : BaseFragment<FirstCoordinator>(
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        with(coordinatorOwner) {
-            coordinatorOwner
-                .coordinator
-                .conflatedState
-                .observe()
-                .onEach { textView.text = it.toString() }
-                .subscribe()
-        }
+        coordinator
+            .conflatedState
+            .observe()
+            .onEach { textView.text = it.toString() }
+            .subscribe()
+
+
+
+        textView.setOnClickListener { coordinator.onClick() }
+
         if (savedInstanceState == null)
             fragmentManager!!.beginTransaction().add(R.id.fragmentHost, SecondFragment()
                 .also {
                     frag.add(it)
-                    it.putArgs(SecondArgument(192)).putString("WHAT","WHAT")
+                    it.putArgs(SecondArgument(192)).putString("WHAT", "WHAT")
                 }).commit()
     }
 }
 
 @Parcelize
-data class SecondArgument(val something: Int):Parcelable
+data class SecondArgument(val something: Int) : Parcelable
 
-class SecondFragment : BaseFragment<SecondCoordinator>(SecondCoordinator::class.java),ArgumentReceiver<SecondArgument> {
+class SecondFragment : BaseFragment<SecondCoordinator>(SecondCoordinator::class.java),
+    ArgumentReceiver<SecondArgument> {
     override val argumentClazz: Class<SecondArgument> = SecondArgument::class.java
 
     override fun onStart() {
@@ -102,18 +107,15 @@ class SecondFragment : BaseFragment<SecondCoordinator>(SecondCoordinator::class.
 }
 
 class FirstCoordinator @Inject constructor(errorHandler: ErrorHandler) : BaseCoordinator(errorHandler) {
-    val conflatedState = ConflatedState(1)
-    val some = getFlowCoordinatorInstance<FlowCoordinator>(appScope,flowTag)
+    val conflatedState:ConflatedState<Int> = ConflatedState(1).saveStateSerial()
+    val conflatedStateLce:ConflatedState<Lce<Int>> = ConflatedState(Lce.Loading())
+    val some = getFlowCoordinatorInstance<FlowCoordinator>(appScope, flowTag)
 
-    init {
-        launch {
-            while (isActive) {
-
-                delay(10)
-                conflatedState.value = conflatedState.value + 1
-            }
-        }
+    fun onClick() {
+        conflatedState.value = ++conflatedState.value
     }
+
+
 
 }
 
@@ -125,8 +127,10 @@ class FlowCoordinator @Inject constructor(errorHandler: ErrorHandler) : BaseCoor
     }
 }
 
-class SecondCoordinator @Inject constructor(errorHandler: ErrorHandler,val secondArgument: SecondArgument) : BaseCoordinator(errorHandler) {
-    val some = getFlowCoordinatorInstance<FlowCoordinator>(appScope,flowTag)
+class SecondCoordinator @Inject constructor(errorHandler: ErrorHandler, val secondArgument: SecondArgument) :
+    BaseCoordinator(errorHandler) {
+    val some = getFlowCoordinatorInstance<FlowCoordinator>(appScope, flowTag)
+
     init {
         Log.d("SOMETHING:", secondArgument.toString())
     }

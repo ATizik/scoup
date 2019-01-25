@@ -44,4 +44,9 @@ abstract class BaseFragment<V : BaseCoordinator>(
         disposable.clear()
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        coordinatorOwner.onSaveInstanceState(outState)
+    }
+
 }

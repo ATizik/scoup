@@ -3,6 +3,7 @@ package ru.atizik.scoup.viewmodel
 import io.reactivex.Completable
 import io.reactivex.Observable
 import io.reactivex.Single
+import io.reactivex.annotations.CheckReturnValue
 import io.reactivex.annotations.SchedulerSupport
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.addTo
@@ -21,6 +22,7 @@ interface DisposableScope:CoroutineScope {
     val disposable: CompositeDisposable
     override val coroutineContext: CoroutineContext
 
+    @CheckReturnValue
     fun <E> ReceiveChannel<E>.onEach(function: (E) -> Unit): ReceiveChannel<E> {
         return map(Dispatchers.Main) {
             function(it)

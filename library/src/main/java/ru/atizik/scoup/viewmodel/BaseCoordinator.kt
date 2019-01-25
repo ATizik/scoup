@@ -1,6 +1,7 @@
 package ru.atizik.scoup.viewmodel
 
 import android.os.Bundle
+import android.os.Parcelable
 import android.support.annotation.CallSuper
 import io.reactivex.Completable
 import io.reactivex.Observable
@@ -12,6 +13,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import ru.atizik.scoup.ConflatedState
 import ru.atizik.scoup.Lce
+import java.io.Serializable
 import kotlin.coroutines.CoroutineContext
 
 
@@ -21,6 +23,9 @@ open class BaseCoordinator(
 ) : Disposable, CoroutineScope, DisposableScope, LceModel {
 
     final override val disposable = CompositeDisposable()
+    val savingListParcelable: MutableList<Pair<()->Parcelable,(Parcelable)->Unit>> = mutableListOf()
+    val savingListSerializable: MutableList<Pair<()->Serializable,(Serializable)->Unit>> = mutableListOf()
+
 
     private val lceModel = object : LceModel {
         override val coroutineContext: CoroutineContext = this@BaseCoordinator.coroutineContext
@@ -47,12 +52,35 @@ open class BaseCoordinator(
         }
     }
 
-    fun onSaveInstanceState (outState: Bundle) {
+    private inline fun <reified T1:()->T3,T2,reified T3> List<Pair<T1,T2>>.toSavableArray(): Array<T3>? =
+        takeIf { it.isNotEmpty() }
+            ?.map { it.first() }
+            ?.toTypedArray()
+
+    @CallSuper
+    open fun onSaveInstanceState (outState: Bundle) {
+        savingListParcelable.toSavableArray()
+            ?.let{ outState.putParcelableArray(this::class.java.toString() + "PARCEL",it) }
+
+        savingListSerializable.toSavableArray()
+            ?.let { outState.putSerializable(this::class.java.toString() + "SERIAL",it) }
 
     }
 
-    fun onRestoreInstanceState (savedInstanceState: Bundle) {
+    @CallSuper
+    open fun onRestoreInstanceState (savedInstanceState: Bundle) {
+        savedInstanceState.getParcelableArray(this::class.java.toString() + "PARCEL")
+            ?.forEachIndexed { index, parcelable -> savingListParcelable[index].second(parcelable) }
+        (savedInstanceState.getSerializable(this::class.java.toString() + "SERIAL") as? Array<Serializable>)
+            ?.forEachIndexed { index, serializable -> savingListSerializable[index].second(serializable) }
+    }
 
+    fun <T:Parcelable> ConflatedState<T>.saveState() = apply{
+        savingListParcelable.add( {value} to { parcl -> value = parcl as T })
+    }
+
+    fun <T:Serializable> ConflatedState<T>.saveStateSerial() = apply{
+        savingListSerializable.add( {value} to { parcl -> value = parcl as T })
     }
 
     @CallSuper

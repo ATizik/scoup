@@ -1,5 +1,7 @@
 package ru.atizik.scoup
 
+import android.support.annotation.CheckResult
+import io.reactivex.annotations.CheckReturnValue
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import kotlin.coroutines.CoroutineContext
@@ -54,14 +56,14 @@ inline fun <T> Lce<T>.onLoading(f: T?.() -> Unit): Lce<T> {
     return this
 }
 
-
+@CheckReturnValue
 inline fun <T> ReceiveChannel<Lce<T>>.onContent(crossinline f: T.() -> Unit): ReceiveChannel<Lce<T>> =
     map(Dispatchers.Main) {
         it.data?.let(f)
         it
     }
 
-
+@CheckReturnValue
 inline fun <T> ReceiveChannel<Lce<T>>.onSuccess(crossinline f: T.() -> Unit): ReceiveChannel<Lce<T>> =
     map(Dispatchers.Main) {
         if (it is Lce.Success)
@@ -69,7 +71,7 @@ inline fun <T> ReceiveChannel<Lce<T>>.onSuccess(crossinline f: T.() -> Unit): Re
         it
     }
 
-
+@CheckReturnValue
 inline fun <T> ReceiveChannel<Lce<T>>.onError(crossinline f: Throwable.(cache: T?) -> Unit): ReceiveChannel<Lce<T>> =
     map(Dispatchers.Main) {
         if (it is Lce.Error<*>)
@@ -77,21 +79,13 @@ inline fun <T> ReceiveChannel<Lce<T>>.onError(crossinline f: Throwable.(cache: T
         it
     }
 
-
+@CheckReturnValue
 inline fun <T> ReceiveChannel<Lce<T>>.onLoading(crossinline f: T?.() -> Unit): ReceiveChannel<Lce<T>> =
     map(Dispatchers.Main) {
         if (it is Lce.Loading<*>)
             f(it.data)
         it
     }
-
-//TODO: Document and/or refactor
-//This is temporary until full fledged streams are introduced in coroutines
-inline fun ReceiveChannel<*>.subscribe(coroutineScope: CoroutineScope) = coroutineScope.launch {
-    while (isActive) {
-        receive()
-    }
-}
 
 
 
