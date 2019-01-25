@@ -1,12 +1,15 @@
 package com.atizik.scoupexample
 
+import android.content.Context
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Parcelable
 import android.support.v4.app.Fragment
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import kotlinx.android.parcel.Parcelize
 import kotlinx.android.synthetic.main.first_fragment.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.ReceiveChannel
@@ -26,6 +29,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        Log.d("SAVED:",savedInstanceState.toString())
         if (savedInstanceState == null) {
             supportFragmentManager
                 .beginTransaction()
@@ -77,13 +81,24 @@ class FirstFragment : BaseFragment<FirstCoordinator>(
                 .subscribe()
         }
         if (savedInstanceState == null)
-            fragmentManager!!.beginTransaction().add(R.id.fragmentHost, SecondFragment().also { frag.add(it) }).commit()
+            fragmentManager!!.beginTransaction().add(R.id.fragmentHost, SecondFragment()
+                .also {
+                    frag.add(it)
+                    it.putArgs(SecondArgument(192)).putString("WHAT","WHAT")
+                }).commit()
     }
 }
 
+@Parcelize
+data class SecondArgument(val something: Int):Parcelable
 
-class SecondFragment : BaseFragment<SecondCoordinator>(SecondCoordinator::class.java) {
+class SecondFragment : BaseFragment<SecondCoordinator>(SecondCoordinator::class.java),ArgumentReceiver<SecondArgument> {
+    override val argumentClazz: Class<SecondArgument> = SecondArgument::class.java
 
+    override fun onStart() {
+        super.onStart()
+        print(coordinatorOwner.coordinator.secondArgument)
+    }
 }
 
 class FirstCoordinator @Inject constructor(errorHandler: ErrorHandler) : BaseCoordinator(errorHandler) {
@@ -110,6 +125,9 @@ class FlowCoordinator @Inject constructor(errorHandler: ErrorHandler) : BaseCoor
     }
 }
 
-class SecondCoordinator @Inject constructor(errorHandler: ErrorHandler) : BaseCoordinator(errorHandler) {
+class SecondCoordinator @Inject constructor(errorHandler: ErrorHandler,val secondArgument: SecondArgument) : BaseCoordinator(errorHandler) {
     val some = getFlowCoordinatorInstance<FlowCoordinator>(appScope,flowTag)
+    init {
+        Log.d("SOMETHING:", secondArgument.toString())
+    }
 }

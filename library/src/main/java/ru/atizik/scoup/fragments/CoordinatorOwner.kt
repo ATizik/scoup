@@ -4,6 +4,7 @@ import android.arch.lifecycle.GenericLifecycleObserver
 import android.arch.lifecycle.Lifecycle
 import android.arch.lifecycle.LifecycleOwner
 import android.os.Bundle
+import android.os.Parcelable
 import android.support.v4.app.Fragment
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
@@ -38,8 +39,9 @@ class CoordinatorOwnerImpl<out V : BaseCoordinator>(
 
     //FIXME this can be member injected by factory
     override val coordinator: V by lazy(LazyThreadSafetyMode.NONE) {
-        getCoordinatorInstance(
+        fragmentDelegate.getCoordinatorInstance(
             clazz,
+            (fragmentDelegate as? ArgumentReceiver<*>)?.argumentClazz,
             fragmentDelegate.getScopeTag()
         ).attachToScope(fragmentDelegate)
     }
