@@ -1,5 +1,6 @@
 package ru.atizik.scoup.viewmodel
 
+import android.os.Bundle
 import android.support.annotation.CallSuper
 import io.reactivex.Completable
 import io.reactivex.Observable
@@ -16,10 +17,10 @@ import kotlin.coroutines.CoroutineContext
 
 open class BaseCoordinator(
     private val errorHandler: ErrorHandler,
-    override val coroutineContext: CoroutineContext = SupervisorJob()
+    final override val coroutineContext: CoroutineContext = SupervisorJob()
 ) : Disposable, CoroutineScope, DisposableScope, LceModel {
 
-    override val disposable = CompositeDisposable()
+    final override val disposable = CompositeDisposable()
 
     private val lceModel = object : LceModel {
         override val coroutineContext: CoroutineContext = this@BaseCoordinator.coroutineContext
@@ -44,6 +45,14 @@ open class BaseCoordinator(
         with(lceModel) {
             return doOnError(errorHandler).toLce(lce)
         }
+    }
+
+    fun onSaveInstanceState (outState: Bundle) {
+
+    }
+
+    fun onRestoreInstanceState (savedInstanceState: Bundle) {
+
     }
 
     @CallSuper

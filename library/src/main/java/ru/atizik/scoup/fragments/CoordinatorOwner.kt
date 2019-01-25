@@ -3,6 +3,7 @@ package ru.atizik.scoup.fragments
 import android.arch.lifecycle.GenericLifecycleObserver
 import android.arch.lifecycle.Lifecycle
 import android.arch.lifecycle.LifecycleOwner
+import android.os.Bundle
 import android.support.v4.app.Fragment
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
@@ -26,6 +27,8 @@ interface CoordinatorOwner<out V : BaseCoordinator>:LateinitFragment {
     fun <T> ConflatedState<T>.observe(viewLifecycle: Lifecycle = fragmentDelegate.viewLifecycleOwner.lifecycle, coroutineContext: CoroutineContext = (fragmentDelegate as CoroutineScope).coroutineContext) =
         observe(viewLifecycle,compDisp, coroutineContext)
 
+    fun onRestoreInstanceState(savedInstanceState: Bundle?)
+
 }
 
 class CoordinatorOwnerImpl<out V : BaseCoordinator>(
@@ -33,11 +36,22 @@ class CoordinatorOwnerImpl<out V : BaseCoordinator>(
 ) : FragmentDelegate(), CoordinatorOwner<V> {
     override val compDisp: CompositeDisposable = CompositeDisposable()
 
+    //FIXME this can be member injected by factory
     override val coordinator: V by lazy(LazyThreadSafetyMode.NONE) {
         getCoordinatorInstance(
             clazz,
             fragmentDelegate.getScopeTag()
         ).attachToScope(fragmentDelegate)
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
+        savedInstanceState?.let(coordinator::onRestoreInstanceState)
+    }
+
+    override fun onStop(owner: LifecycleOwner) {
+        val stateBundle = Bundle()
+        coordinator.onSaveInstanceState(stateBundle)
+        fragmentDelegate.onSaveInstanceState(stateBundle)
     }
 }
 

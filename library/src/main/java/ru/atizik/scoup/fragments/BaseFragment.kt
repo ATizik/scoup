@@ -1,6 +1,7 @@
 package ru.atizik.scoup.fragments
 
 import android.content.Context
+import android.os.Bundle
 import android.support.v4.app.Fragment
 import io.reactivex.disposables.CompositeDisposable
 import kotlinx.coroutines.*
@@ -27,6 +28,11 @@ abstract class BaseFragment<V : BaseCoordinator>(
         injector.init(this)
         coordinatorOwner.init(this)
         toolbarDelegate?.init(this)
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        coordinatorOwner.onRestoreInstanceState(savedInstanceState)
     }
 
     override fun onDestroyView() {

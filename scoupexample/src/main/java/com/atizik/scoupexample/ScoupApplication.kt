@@ -35,9 +35,7 @@ class ScoupApplication : Application() {
                     }
                 }
             }
-            bindInstance<ScopeCounter> {
-                ScopeCounter()
-            }
+
         }
         val appScope = Toothpick.openScope(appScope)
         appScope.installModules(

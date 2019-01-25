@@ -13,7 +13,7 @@ import kotlin.coroutines.resume
 import kotlin.reflect.KProperty
 
 //TODO: Document
-class ConflatedState<T>(value: T? = null) : LifecycleObserver {
+open class ConflatedState<T>(value: T? = null) : LifecycleObserver {
     //override val coroutineContext: CoroutineContext = Job()
     private val conflatedBroadcastChannel = value?.let { ConflatedBroadcastChannel(it) } ?: ConflatedBroadcastChannel()
 
@@ -22,15 +22,15 @@ class ConflatedState<T>(value: T? = null) : LifecycleObserver {
     val valueOrNull
         get() = conflatedBroadcastChannel.valueOrNull
 
-    private operator fun setValue(thisRef: Any, property: KProperty<*>, value: T) {
+    open operator fun setValue(thisRef: Any, property: KProperty<*>, value: T) {
         conflatedBroadcastChannel.offer(value)
     }
 
-    private operator fun getValue(thisRef: Any, property: KProperty<*>): T = conflatedBroadcastChannel.value
+    open operator fun getValue(thisRef: Any, property: KProperty<*>): T = conflatedBroadcastChannel.value
 
     fun openSubscription() = conflatedBroadcastChannel.openSubscription()
 
-    fun observe(lifecycle: Lifecycle, compositeDisposable: CompositeDisposable, coroutineContext: CoroutineContext): ReceiveChannel<T> {
+    open fun observe(lifecycle: Lifecycle, compositeDisposable: CompositeDisposable, coroutineContext: CoroutineContext): ReceiveChannel<T> {
         var active = with(lifecycle.currentState) {
             isAtLeast(Lifecycle.State.STARTED) && !isAtLeast(Lifecycle.State.DESTROYED)
         }

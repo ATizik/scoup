@@ -9,6 +9,7 @@ import io.reactivex.rxkotlin.addTo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.channels.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -27,11 +28,7 @@ interface DisposableScope:CoroutineScope {
         }
     }
 
-    fun ReceiveChannel<*>.subscribe() = launch {
-        while (isActive) {
-            receive()
-        }
-    }
+    fun ReceiveChannel<*>.subscribe() = launch { consumeEach {  } }
 }
 
 //TODO: Document
