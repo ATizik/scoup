@@ -33,20 +33,4 @@ abstract class BaseFragment<V : BaseCoordinator>(
         toolbarDelegate?.init(this)
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        coordinatorOwner.onRestoreInstanceState(savedInstanceState)
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        coroutineContext.cancelChildren()
-        disposable.clear()
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        coordinatorOwner.onSaveInstanceState(outState)
-    }
-
 }

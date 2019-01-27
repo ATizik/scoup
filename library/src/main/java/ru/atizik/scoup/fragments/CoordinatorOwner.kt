@@ -9,15 +9,14 @@ import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.consumeEach
-import kotlinx.coroutines.launch
 import ru.atizik.scoup.ConflatedState
 import ru.atizik.scoup.Lce
 import ru.atizik.scoup.di.getCoordinatorInstance
 import ru.atizik.scoup.viewmodel.BaseCoordinator
+import ru.atizik.scoup.viewmodel.DisposableScope
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 
@@ -30,15 +29,13 @@ interface CoordinatorOwner<out V : BaseCoordinator>:LateinitFragment {
     fun <T> ConflatedState<T>.observe(viewLifecycle: Lifecycle = fragmentDelegate.viewLifecycleOwner.lifecycle, coroutineContext: CoroutineContext = (fragmentDelegate as CoroutineScope).coroutineContext) =
         observe(viewLifecycle,compDisp, coroutineContext)
 
-    fun onRestoreInstanceState(savedInstanceState: Bundle?)
 
-    fun onSaveInstanceState(outState: Bundle)
 
 }
 
 class CoordinatorOwnerImpl<out V : BaseCoordinator>(
     clazz: Class<V>
-) : FragmentDelegate(), CoordinatorOwner<V> {
+) : FragmentDelegateFull(), CoordinatorOwner<V> {
     override val compDisp: CompositeDisposable = CompositeDisposable()
     override lateinit var stateBundle:Bundle
 
@@ -52,16 +49,32 @@ class CoordinatorOwnerImpl<out V : BaseCoordinator>(
         ).attachToScope(fragmentDelegate)
     }
 
-    override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
+    override fun onCreated(savedInstanceState: Bundle?) {
         savedInstanceState?.let(coordinator::onRestoreInstanceState)
     }
 
-    override fun onStop(owner: LifecycleOwner) {
+    override fun onStopped() {
         fragmentDelegate.fragmentManager!!.saveFragmentInstanceState(fragmentDelegate)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         coordinator.onSaveInstanceState(outState)
+    }
+
+    //Technically, [onViewDestroyed] and [onDestroyed] don't belong here,
+    // but creating separate class for them is overkill for now
+    override fun onViewDestroyed() {
+        (fragmentDelegate as? DisposableScope)?.let {
+            it.coroutineContext.cancelChildren()
+            compDisp.clear()
+        }
+    }
+
+    override fun onDestroyed() {
+        (fragmentDelegate as? DisposableScope)?.let {
+            it.coroutineContext.cancel()
+            compDisp.dispose()
+        }
     }
 }
 

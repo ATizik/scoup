@@ -21,7 +21,6 @@ import ru.atizik.scoup.di.getCoordinatorInstance
 import ru.atizik.scoup.di.getFlowCoordinatorInstance
 import ru.atizik.scoup.fragments.*
 import ru.atizik.scoup.onContent
-import ru.atizik.scoup.subscribe
 import ru.atizik.scoup.viewmodel.BaseCoordinator
 import ru.atizik.scoup.viewmodel.ErrorHandler
 import javax.inject.Inject

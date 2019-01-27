@@ -17,14 +17,17 @@ import java.io.Serializable
 import kotlin.coroutines.CoroutineContext
 
 
+private const val PARCEL = "__SCOUP_PARCEL"
+private const val SERIAL = "__SCOUP_SERIAL"
+
 open class BaseCoordinator(
     private val errorHandler: ErrorHandler,
     final override val coroutineContext: CoroutineContext = SupervisorJob()
 ) : Disposable, CoroutineScope, DisposableScope, LceModel {
 
     final override val disposable = CompositeDisposable()
-    val savingListParcelable: MutableList<Pair<()->Parcelable,(Parcelable)->Unit>> = mutableListOf()
-    val savingListSerializable: MutableList<Pair<()->Serializable,(Serializable)->Unit>> = mutableListOf()
+    private val savingListParcelable: MutableList<Pair<()->Parcelable,(Parcelable)->Unit>> = mutableListOf()
+    private val savingListSerializable: MutableList<Pair<()->Serializable,(Serializable)->Unit>> = mutableListOf()
 
 
     private val lceModel = object : LceModel {
@@ -60,28 +63,42 @@ open class BaseCoordinator(
     @CallSuper
     open fun onSaveInstanceState (outState: Bundle) {
         savingListParcelable.toSavableArray()
-            ?.let{ outState.putParcelableArray(this::class.java.toString() + "PARCEL",it) }
+            ?.let{ outState.putParcelableArray(PARCEL,it) }
 
         savingListSerializable.toSavableArray()
-            ?.let { outState.putSerializable(this::class.java.toString() + "SERIAL",it) }
+            ?.let { outState.putSerializable(SERIAL,it) }
 
     }
 
     @CallSuper
     open fun onRestoreInstanceState (savedInstanceState: Bundle) {
-        savedInstanceState.getParcelableArray(this::class.java.toString() + "PARCEL")
+        savedInstanceState.getParcelableArray(PARCEL)
             ?.forEachIndexed { index, parcelable -> savingListParcelable[index].second(parcelable) }
-        (savedInstanceState.getSerializable(this::class.java.toString() + "SERIAL") as? Array<Serializable>)
+        (savedInstanceState.getSerializable(SERIAL) as? Array<Serializable>)
             ?.forEachIndexed { index, serializable -> savingListSerializable[index].second(serializable) }
     }
 
-    fun <T:Parcelable> ConflatedState<T>.saveState() = apply{
-        savingListParcelable.add( {value} to { parcl -> value = parcl as T })
-    }
+    /**
+     * For efficiency, saveState function invocations order must be determined at compile time,
+     * otherwise you will get ClassCastExceptions. If you can't guarantee order/amount of invocations.
+     * you should implement your own persistence logic using [onSaveInstanceState],[onRestoreInstanceState]
+     */
 
-    fun <T:Serializable> ConflatedState<T>.saveStateSerial() = apply{
-        savingListSerializable.add( {value} to { parcl -> value = parcl as T })
-    }
+    fun <T:Parcelable> saveState(getValue: () -> T, restoreValue: (T) -> Unit) =
+        savingListParcelable.add( getValue to (restoreValue as (Parcelable)->Unit))
+
+
+    fun <T:Serializable> saveStateSerial(getValue: () -> T, restoreValue: (T) -> Unit) =
+        savingListSerializable.add( getValue to (restoreValue as (Serializable)->Unit))
+
+
+
+    fun <T:Parcelable> ConflatedState<T>.saveState() = apply { saveState( {value}, { parcl -> value = parcl }) }
+
+
+    fun <T:Serializable> ConflatedState<T>.saveStateSerial() = apply { saveStateSerial( {value}, { serial -> value = serial }) }
+
+
 
     @CallSuper
     override fun dispose() {
