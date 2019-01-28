@@ -96,8 +96,8 @@ class FirstFragment : BaseFragment<FirstCoordinator>(
 data class SecondArgument(val something: Int) : Parcelable
 
 class SecondFragment : BaseFragment<SecondCoordinator>(SecondCoordinator::class.java),
-    ArgumentReceiver<SecondArgument> {
-    override val argumentClazz: Class<SecondArgument> = SecondArgument::class.java
+    ArgumentReceiver<SecondArgument> by argRec() {
+
 
     override fun onStart() {
         super.onStart()
