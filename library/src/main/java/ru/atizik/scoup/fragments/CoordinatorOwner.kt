@@ -24,7 +24,7 @@ import kotlin.coroutines.coroutineContext
 interface CoordinatorOwner<out V : BaseCoordinator>:LateinitFragment {
     val coordinator: V
     val compDisp: CompositeDisposable
-    var stateBundle:Bundle
+
 
     fun <T> ConflatedState<T>.observe(viewLifecycle: Lifecycle = fragmentDelegate.viewLifecycleOwner.lifecycle, coroutineContext: CoroutineContext = (fragmentDelegate as CoroutineScope).coroutineContext) =
         observe(viewLifecycle,compDisp, coroutineContext)
@@ -37,7 +37,6 @@ class CoordinatorOwnerImpl<out V : BaseCoordinator>(
     clazz: Class<V>
 ) : FragmentDelegateFull(), CoordinatorOwner<V> {
     override val compDisp: CompositeDisposable = CompositeDisposable()
-    override lateinit var stateBundle:Bundle
 
 
     //FIXME this can be member injected by factory
@@ -49,10 +48,13 @@ class CoordinatorOwnerImpl<out V : BaseCoordinator>(
         ).attachToScope(fragmentDelegate)
     }
 
-    override fun onCreated(savedInstanceState: Bundle?) {
+    override fun onPreCreated(savedInstanceState: Bundle?) {
         savedInstanceState?.let(coordinator::onRestoreInstanceState)
     }
 
+    /**
+     * [onStopped] will trigger [onSaveInstanceState]
+     */
     override fun onStopped() {
         fragmentDelegate.fragmentManager!!.saveFragmentInstanceState(fragmentDelegate)
     }

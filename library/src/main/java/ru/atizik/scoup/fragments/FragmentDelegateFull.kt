@@ -78,7 +78,13 @@ open class FragmentDelegateFull : LateinitFragment, FragmentManager.FragmentLife
 
     open fun onViewDestroyed() = Unit
 
-    final override fun onFragmentPreCreated(fm: FragmentManager, f: Fragment, savedInstanceState: Bundle?) = Unit
+    final override fun onFragmentPreCreated(fm: FragmentManager, f: Fragment, savedInstanceState: Bundle?) {
+        f.doOnSameScope {
+            onPreCreated(savedInstanceState)
+        }
+    }
+
+    open fun onPreCreated(savedInstanceState: Bundle?) = Unit
 
     final override fun onFragmentActivityCreated(fm: FragmentManager, f: Fragment, savedInstanceState: Bundle?) = Unit
 
