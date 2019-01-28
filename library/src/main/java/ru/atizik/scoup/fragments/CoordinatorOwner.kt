@@ -56,7 +56,7 @@ class CoordinatorOwnerImpl<out V : BaseCoordinator>(
      * [onStopped] will trigger [onSaveInstanceState]
      */
     override fun onStopped() {
-        fragmentDelegate.fragmentManager!!.saveFragmentInstanceState(fragmentDelegate)
+        fragmentDelegate.fragmentManager?.saveFragmentInstanceState(fragmentDelegate)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
