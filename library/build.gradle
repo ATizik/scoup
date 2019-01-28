@@ -72,7 +72,7 @@ publish {
     groupId = 'ru.atizik'
     repoName = 'Scoup'
     artifactId = 'scoup'
-    publishVersion = '0.6.2'
+    publishVersion = '0.6.3'
     desc = 'Scope oriented framework for Android development'
     website = 'https://github.com/ATizik/scoup'
 }

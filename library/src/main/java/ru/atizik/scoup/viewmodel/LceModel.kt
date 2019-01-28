@@ -30,7 +30,7 @@ interface DisposableScope:CoroutineScope {
         }
     }
 
-    fun ReceiveChannel<*>.subscribe() = launch { consumeEach {  } }
+    fun ReceiveChannel<*>.subscribe(context: CoroutineContext = Dispatchers.Main) = launch(context = coroutineContext+context) { consumeEach {  } }
 }
 
 //TODO: Document
