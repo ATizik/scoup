@@ -16,7 +16,7 @@ import kotlin.coroutines.CoroutineContext
 
 //TODO:Document
 abstract class BaseFragment<V : BaseCoordinator>(
-    clazz: Class<V>,
+    clazz: Class<V>/**use [infer] in inheritors here*/,
     protected val injector: FragmentInjector = FragmentInjectorImpl(),
     protected val coordinatorOwner: CoordinatorOwner<V> = CoordinatorOwnerImpl(clazz),
     protected val toolbarDelegate: ToolbarDelegate? = ToolbarDelegateImpl()
@@ -34,3 +34,5 @@ abstract class BaseFragment<V : BaseCoordinator>(
     }
 
 }
+
+inline fun <reified V> infer():Class<V> = V::class.java

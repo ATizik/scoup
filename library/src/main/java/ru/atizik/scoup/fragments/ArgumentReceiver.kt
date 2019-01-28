@@ -11,6 +11,7 @@ import android.support.v4.app.Fragment
  * ArgumentReceiver<ArgumentType> by argRec()
  * Place argument into bundle by invoking [putArgs]
  * Now argument of type ArgumentType will be injected in Coordinator constructor
+ * Use Parcelize annotation and sealed classes as needed
  */
 interface ArgumentReceiver<T:Parcelable> {
     val argumentClazz: Class<T>
