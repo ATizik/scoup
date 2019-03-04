@@ -1,13 +1,10 @@
 package ru.atizik.scoup.di
 
-import android.os.Bundle
 import android.os.Parcelable
 import android.support.v4.app.Fragment
-import ru.atizik.scoup.fragments.BaseFragment
 import ru.atizik.scoup.fragments.SCOUP_ARG
 import ru.atizik.scoup.fragments.ScopeCounter
 import ru.atizik.scoup.viewmodel.BaseCoordinator
-import ru.atizik.scoup.viewmodel.ErrorHandler
 import toothpick.config.Module
 
 //TODO:Document
