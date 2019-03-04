@@ -20,15 +20,27 @@ import kotlin.coroutines.CoroutineContext
 private const val PARCEL = "__SCOUP_PARCEL"
 private const val SERIAL = "__SCOUP_SERIAL"
 
-open class BaseCoordinator(
+interface StateCoordinator: Disposable
+
+open class BaseCoordinator<T : MvState>(
+    initialState: T,
     private val errorHandler: ErrorHandler,
-    final override val coroutineContext: CoroutineContext = SupervisorJob()
-) : Disposable, CoroutineScope, DisposableScope, LceModel {
+    final override val coroutineContext: CoroutineContext = SupervisorJob(),
+    private val debugMode: Boolean = false
+) : StateCoordinator, Disposable, CoroutineScope, DisposableScope, LceModel {
+
+
+    private val stateStore: MvCorStateStore<T> = MvCorStateStore(initialState, coroutineContext)
+
+    internal val state: T
+        get() = stateStore.state
+
+    internal val stateObservable: Observable<T>
+        get() = stateStore.observable
 
     final override val disposable = CompositeDisposable()
     private val savingListParcelable: MutableList<Pair<()->Parcelable,(Parcelable)->Unit>> = mutableListOf()
     private val savingListSerializable: MutableList<Pair<()->Serializable,(Serializable)->Unit>> = mutableListOf()
-
 
     private val lceModel = object : LceModel {
         override val coroutineContext: CoroutineContext = this@BaseCoordinator.coroutineContext
@@ -41,6 +53,38 @@ open class BaseCoordinator(
         with(lceModel) {
             return doOnError(errorHandler).toLce(lce)
         }
+    }
+
+    /**
+     * Call this to mutate the current state.
+     * A few important notes about the state reducer.
+     * 1) It will not be called synchronously or on the same thread. This is for performance and accuracy reasons.
+     * 2) Similar to the execute lambda above, the current state is the state receiver  so the `count` in `count + 1` is actually the count
+     *    property of the state at the time that the lambda is called
+     * 3) In development, MvRx will do checks to make sure that your setState is pure by calling in multiple times. As a result, DO NOT use
+     *    mutable variables or properties from outside the lambda or else it may crash.
+     */
+    protected fun setState(reducer: T.() -> T) {
+        if (debugMode) {
+            // Must use `set` to ensure the validated state is the same as the actual state used in reducer
+            // Do not use `get` since `getState` queue has lower priority and the validated state would be the state after reduced
+            stateStore.set {
+                val firstState = this.reducer()
+                val secondState = this.reducer()
+                if (firstState != secondState) throw IllegalArgumentException("Your reducer must be pure!")
+                firstState
+            }
+        } else {
+            stateStore.set(reducer)
+        }
+    }
+
+    /**
+     * Access the current ViewModel state. Takes a block of code that will be run after all current pending state
+     * updates are processed. The `this` inside of the block is the state.
+     */
+    protected fun withState(block: (state: T) -> Unit) {
+        stateStore.get(block)
     }
 
     override fun <T : Any> Observable<T>.toLce(lce: ConflatedState<Lce<T>>): Disposable {
