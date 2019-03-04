@@ -18,10 +18,11 @@ import ru.atizik.scoup.di.getCoordinatorInstance
 import ru.atizik.scoup.viewmodel.BaseCoordinator
 import ru.atizik.scoup.viewmodel.DisposableScope
 import ru.atizik.scoup.viewmodel.MvState
+import ru.atizik.scoup.viewmodel.StateCoordinator
 import kotlin.coroutines.CoroutineContext
 
 //TODO:Document
-interface CoordinatorOwner<T : MvState, out V : BaseCoordinator<T>>:LateinitFragment {
+interface CoordinatorOwner<out V : BaseCoordinator>:LateinitFragment {
     val coordinator: V
     val compDisp: CompositeDisposable
 
@@ -29,11 +30,7 @@ interface CoordinatorOwner<T : MvState, out V : BaseCoordinator<T>>:LateinitFrag
     fun <T> ConflatedState<T>.observe(viewLifecycle: Lifecycle = fragmentDelegate.viewLifecycleOwner.lifecycle, coroutineContext: CoroutineContext = (fragmentDelegate as CoroutineScope).coroutineContext) =
         observe(viewLifecycle,compDisp, coroutineContext)
 
-    fun subscribe(subscriber: (T) -> Unit) = coordinator.stateObservable.subscribeLifecycle(fragmentDelegate.viewLifecycleOwner, subscriber)
-
-    fun <C> withState(block: (T) -> C) = block(coordinator.state)
-
-    private fun <T> Observable<T>.subscribeLifecycle(
+    fun <T> Observable<T>.subscribeLifecycle(
         lifecycleOwner: LifecycleOwner? = null,
         subscriber: (T) -> Unit
     ): Disposable {
@@ -55,9 +52,9 @@ interface CoordinatorOwner<T : MvState, out V : BaseCoordinator<T>>:LateinitFrag
     }
 }
 
-class CoordinatorOwnerImpl<T : MvState, out V : BaseCoordinator<T>>(
+open class CoordinatorOwnerImpl<out V : BaseCoordinator>(
     clazz: Class<V>
-) : FragmentDelegateFull(), CoordinatorOwner<T, V> {
+) : FragmentDelegateFull(), CoordinatorOwner<V> {
     override val compDisp: CompositeDisposable = CompositeDisposable()
 
 
@@ -116,3 +113,15 @@ fun <T : Disposable> T.attachToScope(fragment: Fragment): T {
 fun Fragment.isRemovingCompat() = isRemoving || anyParentIsRemoving()
 
 fun Fragment.anyParentIsRemoving(): Boolean = parentFragment?.let { it.anyParentIsRemoving() || it.isRemoving } ?: false
+
+
+
+interface CoordinatorOwnerState<S : MvState, out V : StateCoordinator<S>>:CoordinatorOwner<V> {
+    fun subscribe(subscriber: (S) -> Unit) = coordinator.stateObservable.subscribeLifecycle(fragmentDelegate.viewLifecycleOwner, subscriber)
+
+    fun <C> withState(block: (S) -> C) = block(coordinator.state)
+}
+
+class CoordinatorOwnerStateImpl<S : MvState, out V : StateCoordinator<S>>(
+    clazz: Class<V>
+) : CoordinatorOwnerState<S, V>, CoordinatorOwnerImpl<V>(clazz)

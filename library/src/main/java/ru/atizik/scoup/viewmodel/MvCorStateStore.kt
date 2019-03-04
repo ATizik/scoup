@@ -3,14 +3,12 @@ package ru.atizik.scoup.viewmodel
 import io.reactivex.Observable
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.channels.*
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.rx2.asObservable
-import java.util.LinkedList
+import java.util.*
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -22,102 +20,56 @@ import kotlin.coroutines.CoroutineContext
  *
  */
 
-internal open class MvCorStateStore<S : Any>(initialState: S, coroutineContext: CoroutineContext, coroutineDispatcher: CoroutineDispatcher = Default) : Disposable, IMvRxStateStore<S> {
-    /**
-     * The channel is where state changes should be pushed to.
-     */
-    private val channel = ConflatedBroadcastChannel(initialState)
-    /**
-     * The observable observes the channel but only emits events when the state actually changed.
-     */
-    private val disposables = CompositeDisposable()
+internal open class MvCorStateStore<S : Any>(initialState: S, final override val coroutineContext: CoroutineContext = Dispatchers.Default) : Disposable, CoroutineScope, IMvRxStateStore<S> {
 
-
-    override val observable: Observable<S> = channel.openSubscription().asObservable(coroutineDispatcher).distinctUntilChanged()
     /**
-     * This is automatically updated from a subscription on the channel for easy access to the
+     * The stateChannel is where state changes should be pushed to.
+     */
+    private val stateChannel = ConflatedBroadcastChannel(initialState)
+    /**
+     * The observable observes the stateChannel but only emits events when the state actually changed.
+     */
+
+    override val observable: Observable<S> = stateChannel.openSubscription().asObservable(coroutineContext).distinctUntilChanged()
+    /**
+     * This is automatically updated from a subscription on the stateChannel for easy access to the
      * current state.
      */
     override val state: S
-        get() = channel.value
+        get() = stateChannel.value
 
     sealed class Job<S> {
-        class SetQueueElement<S>(val block: S.() -> S) : Job<S>()
+        class SetQueueElement<S>(val reducer: S.() -> S) : Job<S>()
         class GetQueueElement<S>(val block: (S) -> Unit) : Job<S>()
-        class GetSyncValue<S>(val completable: CompletableDeferred<S>) : Job<S>()
     }
 
-    val actor = CoroutineScope(coroutineContext).actor<Job<S>>(context = coroutineDispatcher, capacity = Channel.UNLIMITED){
+    /**
+     * Actor responsible for processing get and set blocks. Sequentially processes every block, SetQueueElement in higher priority.
+     * Once every SetQueueElement is processed actor iterates over GetQueueElements until no elements are left, or a new message
+     * is sent to an actor
+     */
+    private val actor = actor<Job<S>>(coroutineContext, capacity = Channel.UNLIMITED) {
 
 
-        val getStateQueue = LinkedList<(state: S) -> Unit>()
-        var setStateQueue = LinkedList<S.() -> S>()
-
-        fun dequeueGetStateBlock(): ((state: S) -> Unit)? {
-            if (getStateQueue.isEmpty()) return null
-
-            return getStateQueue.removeFirst()
-        }
-
-        fun dequeueAllSetStateBlocks(): List<(S.() -> S)>? {
-            // do not allocate empty queue for no-op flushes
-            if (setStateQueue.isEmpty()) return null
-
-            val queue = setStateQueue
-            setStateQueue = LinkedList()
-            return queue
-        }
-
-        /**
-         * Coalesce all updates on the setState queue and clear the queue.
-         */
-        fun flushSetStateQueue() {
-            val blocks = dequeueAllSetStateBlocks() ?: return
-
-            blocks
-                    .fold(this@MvCorStateStore.channel.value) { state, reducer -> state.reducer() }
-                    .run { this@MvCorStateStore.channel.offer(this) }
-        }
-
-        /**
-         * Flushes the setState and getState queues.
-         *
-         * This will flush he setState queue then call the first element on the getState queue.
-         *
-         * In case the setState queue calls setState, we call flushQueues recursively to flush the setState queue
-         * in between every getState block gets processed.
-         */
-        tailrec fun flushQueues() {
-            flushSetStateQueue()
-            val block = dequeueGetStateBlock() ?: return
-            block(this@MvCorStateStore.channel.value)
-            flushQueues()
-        }
-
-
-        loop@ for (msg in channel) { // iterate over incoming messages
-
-            when (msg) {
-                is Job.GetQueueElement<S> -> {
-                    getStateQueue.push(msg.block)
-                }
-                is Job.SetQueueElement<S> -> {
-                    setStateQueue.push(msg.block)
-                }
-                is Job.GetSyncValue<S> -> {
-                    msg.completable.complete(this@MvCorStateStore.channel.value)
-                    continue@loop
-                }
-            }
-
+        val getQueue = ArrayDeque<(S) -> Unit>()
+        consumeEach { msg ->
             try {
-                flushQueues()
+                when (msg) {
+                    is Job.GetQueueElement<S> -> getQueue.offer(msg.block)
+
+                    is Job.SetQueueElement<S> -> stateChannel.value
+                        .let { msg.reducer(it) }
+                        .let(stateChannel::offer)
+                }
+
+                while (channel.isEmpty) {
+                    stateChannel.value.let(getQueue.poll() ?: break)
+                }
+
             } catch (t: Throwable) {
                 handleError(t)
             }
         }
-
-
     }
 
 
@@ -130,8 +82,8 @@ internal open class MvCorStateStore<S : Any>(initialState: S, coroutineContext: 
     }
 
     /**
-     * Call this to update the state. The state reducer will get added to a queue that is processes
-     * on a background thread. The state reducer's receiver type is the current state when the
+     * Call this to update the state. The state reducer will get added to a queue that is processed
+     * on a specified dispatcher. The state reducer's receiver type is the current state when the
      * reducer is called.
      *
      * An example of a reducer would be `{ copy(myProperty = 5) }`. The copy comes from the copy
@@ -152,14 +104,10 @@ internal open class MvCorStateStore<S : Any>(initialState: S, coroutineContext: 
         e?.let { throw it }
     }
 
-    override fun isDisposed() = disposables.isDisposed
+    override fun isDisposed() = coroutineContext.isActive
 
     override fun dispose() {
-        disposables.dispose()
+        coroutineContext.cancel()
     }
 
-    private fun Disposable.registerDisposable(): Disposable {
-        disposables.add(this)
-        return this
-    }
 }

@@ -15,13 +15,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import ru.atizik.scoup.ConflatedState
 import ru.atizik.scoup.Lce
-import ru.atizik.scoup.data.Resource
-import ru.atizik.scoup.data.onSuccess
 import ru.atizik.scoup.di.getFlowCoordinatorInstance
 import ru.atizik.scoup.fragments.*
+import ru.atizik.scoup.onSuccess
 import ru.atizik.scoup.viewmodel.BaseCoordinator
 import ru.atizik.scoup.viewmodel.ErrorHandler
 import ru.atizik.scoup.viewmodel.MvState
+import ru.atizik.scoup.viewmodel.StateCoordinator
 import javax.inject.Inject
 
 class MainActivity : AppCompatActivity() {
@@ -55,21 +55,21 @@ class MainActivity : AppCompatActivity() {
 var frag = mutableListOf<Fragment>()
 const val flowTag = "flowTag"
 
-class MainFragment : BaseFragment<MainState, MainCoordinator>(MainCoordinator::class.java) {
+class MainFragment : BaseFragment<MainCoordinator>(MainCoordinator::class.java) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
     }
 }
 
-data class MainState(val resource: Resource<String> = Resource.Success("data not loaded")): MvState
+data class MainState(val resource: Lce<String> = Lce.Success("data not loaded")): MvState
 
-class MainCoordinator @Inject constructor(errorHandler: ErrorHandler) : BaseCoordinator<MainState>(MainState(), errorHandler)
+class MainCoordinator @Inject constructor(errorHandler: ErrorHandler) : BaseCoordinator(errorHandler)
 
 
-data class FirstState(val resource: Resource<String> = Resource.Success("data not loaded")): MvState
+data class FirstState(val resource: Lce<String> = Lce.Success("data not loaded")): MvState
 
-class FirstFragment : BaseFragment<FirstState, FirstCoordinator>(
+class FirstFragment : BaseFragmentState<FirstState, FirstCoordinator>(
     FirstCoordinator::class.java
 ) {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?) =
@@ -104,7 +104,7 @@ class FirstFragment : BaseFragment<FirstState, FirstCoordinator>(
 @Parcelize
 data class SecondArgument(val something: Int) : Parcelable
 
-class SecondFragment : BaseFragment<SecondState, SecondCoordinator>(SecondCoordinator::class.java),
+class SecondFragment : BaseFragment<SecondCoordinator>(SecondCoordinator::class.java),
     ArgumentReceiver<SecondArgument> by argRec() {
 
 
@@ -114,7 +114,7 @@ class SecondFragment : BaseFragment<SecondState, SecondCoordinator>(SecondCoordi
     }
 }
 
-class FirstCoordinator @Inject constructor(errorHandler: ErrorHandler) : BaseCoordinator<FirstState>(FirstState(), errorHandler) {
+class FirstCoordinator @Inject constructor(errorHandler: ErrorHandler) : StateCoordinator<FirstState>(FirstState(), errorHandler) {
     val conflatedState:ConflatedState<Int> = ConflatedState(1).saveStateSerial()
     val conflatedStateLce:ConflatedState<Lce<Int>> = ConflatedState(Lce.Loading())
     val some = getFlowCoordinatorInstance<FlowCoordinator>(appScope, flowTag)
@@ -126,12 +126,12 @@ class FirstCoordinator @Inject constructor(errorHandler: ErrorHandler) : BaseCoo
     init {
         launch {
             delay(5000)
-            setState { copy(resource = Resource.Success("Data loaded!")) }
+            setState { copy(resource = Lce.Success("Data loaded!")) }
         }
     }
 }
 
-class FlowCoordinator @Inject constructor(errorHandler: ErrorHandler) : BaseCoordinator<FlowState>(FlowState(), errorHandler) {
+class FlowCoordinator @Inject constructor(errorHandler: ErrorHandler) : BaseCoordinator(errorHandler) {
 
     override fun dispose() {
         super.dispose()
@@ -142,12 +142,10 @@ class FlowCoordinator @Inject constructor(errorHandler: ErrorHandler) : BaseCoor
 data class FlowState(val todo: Unit = Unit): MvState
 
 class SecondCoordinator @Inject constructor(errorHandler: ErrorHandler, val secondArgument: SecondArgument) :
-    BaseCoordinator<SecondState>(SecondState(), errorHandler) {
+    BaseCoordinator(errorHandler) {
     val some = getFlowCoordinatorInstance<FlowCoordinator>(appScope, flowTag)
 
     init {
         Log.d("SOMETHING:", secondArgument.toString())
     }
 }
-
-data class SecondState(val todo: Unit = Unit): MvState

@@ -10,7 +10,6 @@ import ru.atizik.scoup.fragments.attachToScope
 import ru.atizik.scoup.fragments.getScopeTag
 import ru.atizik.scoup.viewmodel.BaseCoordinator
 import ru.atizik.scoup.viewmodel.DisposableScope
-import ru.atizik.scoup.viewmodel.StateCoordinator
 import toothpick.Toothpick
 
 /**
@@ -24,7 +23,7 @@ import toothpick.Toothpick
 /**
  * Binds lifecycle of fragment to Coordinator just as AAC ViewModel binds to Fragment
  */
-inline fun <reified T : StateCoordinator> bindCoordinatorInstance(obj: Fragment): T =
+inline fun <reified T : BaseCoordinator> bindCoordinatorInstance(obj: Fragment): T =
     getCoordinatorInstance(T::class.java, obj)
         .attachToScope(obj)
 
@@ -32,20 +31,20 @@ inline fun <reified T : StateCoordinator> bindCoordinatorInstance(obj: Fragment)
  * This coordinator should be disposed manually
  */
 @CheckReturnValue
-inline fun <reified T : StateCoordinator> getCoordinatorInstance(tag: Any): T =
+inline fun <reified T : BaseCoordinator> getCoordinatorInstance(tag: Any): T =
     getCoordinatorInstance(T::class.java, tag)
 
 /**
  * This coordinator should be disposed manually
  */
 @CheckReturnValue
-fun <T : StateCoordinator> getCoordinatorInstance(coordinatorClass: Class<T>, tag: Any): T =
+fun <T : BaseCoordinator> getCoordinatorInstance(coordinatorClass: Class<T>, tag: Any): T =
     Toothpick.openScope(tag)
         .applyModules(ViewModelModule(coordinatorClass))
         .getInstance(coordinatorClass)
 
 @CheckReturnValue
-fun <T : StateCoordinator, A : Parcelable> Fragment.getCoordinatorInstance(
+fun <T : BaseCoordinator, A : Parcelable> Fragment.getCoordinatorInstance(
     coordinatorClass: Class<T>,
     argumentClass: Class<A>?,
     tag: Any
@@ -63,7 +62,7 @@ fun <T : StateCoordinator, A : Parcelable> Fragment.getCoordinatorInstance(
  * This coordinator should be disposed manually
  */
 @CheckReturnValue
-inline fun <reified T : StateCoordinator> DisposableScope.getFlowCoordinatorInstance(vararg tag: Any): T =
+inline fun <reified T : BaseCoordinator> DisposableScope.getFlowCoordinatorInstance(vararg tag: Any): T =
     with(Toothpick.openScopes(*tag).applyModules(ViewModelModule(T::class.java))) {
         val counter = getInstance(ScopeCounter::class.java)
         counter.set.incrementAndGet()

@@ -20,15 +20,13 @@ import kotlin.coroutines.CoroutineContext
 private const val PARCEL = "__SCOUP_PARCEL"
 private const val SERIAL = "__SCOUP_SERIAL"
 
-interface StateCoordinator: Disposable
 
-open class BaseCoordinator<T : MvState>(
+open class StateCoordinator<T : MvState>(
     initialState: T,
-    private val errorHandler: ErrorHandler,
-    final override val coroutineContext: CoroutineContext = SupervisorJob(),
+    errorHandler: ErrorHandler,
+    coroutineContext: CoroutineContext = SupervisorJob(),
     private val debugMode: Boolean = false
-) : StateCoordinator, Disposable, CoroutineScope, DisposableScope, LceModel {
-
+) : BaseCoordinator(errorHandler, coroutineContext) {
 
     private val stateStore: MvCorStateStore<T> = MvCorStateStore(initialState, coroutineContext)
 
@@ -37,23 +35,6 @@ open class BaseCoordinator<T : MvState>(
 
     internal val stateObservable: Observable<T>
         get() = stateStore.observable
-
-    final override val disposable = CompositeDisposable()
-    private val savingListParcelable: MutableList<Pair<()->Parcelable,(Parcelable)->Unit>> = mutableListOf()
-    private val savingListSerializable: MutableList<Pair<()->Serializable,(Serializable)->Unit>> = mutableListOf()
-
-    private val lceModel = object : LceModel {
-        override val coroutineContext: CoroutineContext = this@BaseCoordinator.coroutineContext
-        override val disposable: CompositeDisposable = this@BaseCoordinator.disposable
-    }
-
-    override fun isDisposed(): Boolean = disposable.isDisposed
-
-    override fun <T : Any> Single<T>.toLce(lce: ConflatedState<Lce<T>>): Disposable {
-        with(lceModel) {
-            return doOnError(errorHandler).toLce(lce)
-        }
-    }
 
     /**
      * Call this to mutate the current state.
@@ -86,6 +67,29 @@ open class BaseCoordinator<T : MvState>(
     protected fun withState(block: (state: T) -> Unit) {
         stateStore.get(block)
     }
+}
+
+open class BaseCoordinator(
+    private val errorHandler: ErrorHandler,
+    override val coroutineContext: CoroutineContext = SupervisorJob()
+) : Disposable, CoroutineScope, DisposableScope, LceModel {
+
+    final override val disposable = CompositeDisposable()
+    private val savingListParcelable: MutableList<Pair<() -> Parcelable, (Parcelable) -> Unit>> = mutableListOf()
+    private val savingListSerializable: MutableList<Pair<() -> Serializable, (Serializable) -> Unit>> = mutableListOf()
+
+    private val lceModel = object : LceModel {
+        override val coroutineContext: CoroutineContext = this@BaseCoordinator.coroutineContext
+        override val disposable: CompositeDisposable = this@BaseCoordinator.disposable
+    }
+
+    override fun isDisposed(): Boolean = disposable.isDisposed
+
+    override fun <T : Any> Single<T>.toLce(lce: ConflatedState<Lce<T>>): Disposable {
+        with(lceModel) {
+            return doOnError(errorHandler).toLce(lce)
+        }
+    }
 
     override fun <T : Any> Observable<T>.toLce(lce: ConflatedState<Lce<T>>): Disposable {
         with(lceModel) {
@@ -99,23 +103,23 @@ open class BaseCoordinator<T : MvState>(
         }
     }
 
-    private inline fun <reified T1:()->T3,T2,reified T3> List<Pair<T1,T2>>.toSavableArray(): Array<T3>? =
+    private inline fun <reified T1 : () -> T3, T2, reified T3> List<Pair<T1, T2>>.toSavableArray(): Array<T3>? =
         takeIf { it.isNotEmpty() }
             ?.map { it.first() }
             ?.toTypedArray()
 
     @CallSuper
-    open fun onSaveInstanceState (outState: Bundle) {
+    open fun onSaveInstanceState(outState: Bundle) {
         savingListParcelable.toSavableArray()
-            ?.let{ outState.putParcelableArray(PARCEL,it) }
+            ?.let { outState.putParcelableArray(PARCEL, it) }
 
         savingListSerializable.toSavableArray()
-            ?.let { outState.putSerializable(SERIAL,it) }
+            ?.let { outState.putSerializable(SERIAL, it) }
 
     }
 
     @CallSuper
-    open fun onRestoreInstanceState (savedInstanceState: Bundle) {
+    open fun onRestoreInstanceState(savedInstanceState: Bundle) {
         savedInstanceState.getParcelableArray(PARCEL)
             ?.forEachIndexed { index, parcelable -> savingListParcelable[index].second(parcelable) }
         (savedInstanceState.getSerializable(SERIAL) as? Array<Serializable>)
@@ -128,20 +132,19 @@ open class BaseCoordinator<T : MvState>(
      * you should implement your own persistence logic using [onSaveInstanceState],[onRestoreInstanceState]
      */
 
-    fun <T:Parcelable> saveState(getValue: () -> T, restoreValue: (T) -> Unit) =
-        savingListParcelable.add( getValue to (restoreValue as (Parcelable)->Unit))
+    fun <T : Parcelable> saveState(getValue: () -> T, restoreValue: (T) -> Unit) =
+        savingListParcelable.add(getValue to (restoreValue as (Parcelable) -> Unit))
 
 
-    fun <T:Serializable> saveStateSerial(getValue: () -> T, restoreValue: (T) -> Unit) =
-        savingListSerializable.add( getValue to (restoreValue as (Serializable)->Unit))
+    fun <T : Serializable> saveStateSerial(getValue: () -> T, restoreValue: (T) -> Unit) =
+        savingListSerializable.add(getValue to (restoreValue as (Serializable) -> Unit))
 
 
+    fun <T : Parcelable> ConflatedState<T>.saveState() = apply { saveState({ value }, { parcl -> value = parcl }) }
 
-    fun <T:Parcelable> ConflatedState<T>.saveState() = apply { saveState( {value}, { parcl -> value = parcl }) }
 
-
-    fun <T:Serializable> ConflatedState<T>.saveStateSerial() = apply { saveStateSerial( {value}, { serial -> value = serial }) }
-
+    fun <T : Serializable> ConflatedState<T>.saveStateSerial() =
+        apply { saveStateSerial({ value }, { serial -> value = serial }) }
 
 
     @CallSuper
@@ -152,4 +155,4 @@ open class BaseCoordinator<T : MvState>(
 
 }
 
-interface ErrorHandler:(Throwable)->Unit
+interface ErrorHandler : (Throwable) -> Unit
