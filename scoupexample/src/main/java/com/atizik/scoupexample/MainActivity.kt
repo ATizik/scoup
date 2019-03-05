@@ -1,5 +1,6 @@
 package com.atizik.scoupexample
 
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.os.Parcelable
 import android.support.v4.app.Fragment
@@ -72,6 +73,15 @@ data class FirstState(val resource: Lce<String> = Lce.Success("data not loaded")
 class FirstFragment : BaseFragmentState<FirstState, FirstCoordinator>(
     FirstCoordinator::class.java
 ) {
+
+    init {
+        toolbarDelegate?.toolbarBuilder = {
+            background = ColorDrawable(fragmentDelegate.resources.getColor(R.color.colorPrimaryDark))
+            title = "Toolbar"
+            setNavigationIcon(android.R.drawable.ic_menu_add)
+        }
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?) =
         inflater.inflate(R.layout.first_fragment, null)
 
