@@ -18,7 +18,7 @@ interface ToolbarDelegate:LateinitFragment {
     var toolbarBuilder: (Toolbar.()->Unit)?
 }
 
-class ToolbarDelegateImpl(override var toolbarBuilder: (Toolbar.() -> Unit)? = null):FragmentDelegate(),ToolbarDelegate {
+class ToolbarDelegateImpl(override var toolbarBuilder: (Toolbar.() -> Unit)? = null, private val textAppearance: Int? = null):FragmentDelegate(),ToolbarDelegate {
     lateinit var toolbar: Toolbar
 
     override fun onStart(owner: LifecycleOwner) {
@@ -32,6 +32,7 @@ class ToolbarDelegateImpl(override var toolbarBuilder: (Toolbar.() -> Unit)? = n
 
 
         toolbarBuilder?.let { toolbar.it() }
+        textAppearance?.let { toolbar.setTitleTextAppearance(fragmentDelegate.context, textAppearance) }
 
         (toolbar.parent as? ViewGroup)?.let {
             it.removeView(toolbar)
