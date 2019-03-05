@@ -20,15 +20,63 @@ import kotlin.coroutines.CoroutineContext
 private const val PARCEL = "__SCOUP_PARCEL"
 private const val SERIAL = "__SCOUP_SERIAL"
 
+
+open class StateCoordinator<T : MvState>(
+    initialState: T,
+    errorHandler: ErrorHandler,
+    coroutineContext: CoroutineContext = SupervisorJob(),
+    private val debugMode: Boolean = false
+) : BaseCoordinator(errorHandler, coroutineContext) {
+
+    private val stateStore: MvCorStateStore<T> = MvCorStateStore(initialState, coroutineContext)
+
+    internal val state: T
+        get() = stateStore.state
+
+    internal val stateObservable: Observable<T>
+        get() = stateStore.observable
+
+    /**
+     * Call this to mutate the current state.
+     * A few important notes about the state reducer.
+     * 1) It will not be called synchronously or on the same thread. This is for performance and accuracy reasons.
+     * 2) Similar to the execute lambda above, the current state is the state receiver  so the `count` in `count + 1` is actually the count
+     *    property of the state at the time that the lambda is called
+     * 3) In development, MvRx will do checks to make sure that your setState is pure by calling in multiple times. As a result, DO NOT use
+     *    mutable variables or properties from outside the lambda or else it may crash.
+     */
+    protected fun setState(reducer: T.() -> T) {
+        if (debugMode) {
+            // Must use `set` to ensure the validated state is the same as the actual state used in reducer
+            // Do not use `get` since `getState` queue has lower priority and the validated state would be the state after reduced
+            stateStore.set {
+                val firstState = this.reducer()
+                val secondState = this.reducer()
+                if (firstState != secondState) throw IllegalArgumentException("Your reducer must be pure!")
+                firstState
+            }
+        } else {
+            stateStore.set(reducer)
+        }
+    }
+
+    /**
+     * Access the current ViewModel state. Takes a block of code that will be run after all current pending state
+     * updates are processed. The `this` inside of the block is the state.
+     */
+    protected fun withState(block: (state: T) -> Unit) {
+        stateStore.get(block)
+    }
+}
+
 open class BaseCoordinator(
     private val errorHandler: ErrorHandler,
-    final override val coroutineContext: CoroutineContext = SupervisorJob()
+    override val coroutineContext: CoroutineContext = SupervisorJob()
 ) : Disposable, CoroutineScope, DisposableScope, LceModel {
 
     final override val disposable = CompositeDisposable()
-    private val savingListParcelable: MutableList<Pair<()->Parcelable,(Parcelable)->Unit>> = mutableListOf()
-    private val savingListSerializable: MutableList<Pair<()->Serializable,(Serializable)->Unit>> = mutableListOf()
-
+    private val savingListParcelable: MutableList<Pair<() -> Parcelable, (Parcelable) -> Unit>> = mutableListOf()
+    private val savingListSerializable: MutableList<Pair<() -> Serializable, (Serializable) -> Unit>> = mutableListOf()
 
     private val lceModel = object : LceModel {
         override val coroutineContext: CoroutineContext = this@BaseCoordinator.coroutineContext
@@ -55,23 +103,23 @@ open class BaseCoordinator(
         }
     }
 
-    private inline fun <reified T1:()->T3,T2,reified T3> List<Pair<T1,T2>>.toSavableArray(): Array<T3>? =
+    private inline fun <reified T1 : () -> T3, T2, reified T3> List<Pair<T1, T2>>.toSavableArray(): Array<T3>? =
         takeIf { it.isNotEmpty() }
             ?.map { it.first() }
             ?.toTypedArray()
 
     @CallSuper
-    open fun onSaveInstanceState (outState: Bundle) {
+    open fun onSaveInstanceState(outState: Bundle) {
         savingListParcelable.toSavableArray()
-            ?.let{ outState.putParcelableArray(PARCEL,it) }
+            ?.let { outState.putParcelableArray(PARCEL, it) }
 
         savingListSerializable.toSavableArray()
-            ?.let { outState.putSerializable(SERIAL,it) }
+            ?.let { outState.putSerializable(SERIAL, it) }
 
     }
 
     @CallSuper
-    open fun onRestoreInstanceState (savedInstanceState: Bundle) {
+    open fun onRestoreInstanceState(savedInstanceState: Bundle) {
         savedInstanceState.getParcelableArray(PARCEL)
             ?.forEachIndexed { index, parcelable -> savingListParcelable[index].second(parcelable) }
         (savedInstanceState.getSerializable(SERIAL) as? Array<Serializable>)
@@ -84,20 +132,19 @@ open class BaseCoordinator(
      * you should implement your own persistence logic using [onSaveInstanceState],[onRestoreInstanceState]
      */
 
-    fun <T:Parcelable> saveState(getValue: () -> T, restoreValue: (T) -> Unit) =
-        savingListParcelable.add( getValue to (restoreValue as (Parcelable)->Unit))
+    fun <T : Parcelable> saveState(getValue: () -> T, restoreValue: (T) -> Unit) =
+        savingListParcelable.add(getValue to (restoreValue as (Parcelable) -> Unit))
 
 
-    fun <T:Serializable> saveStateSerial(getValue: () -> T, restoreValue: (T) -> Unit) =
-        savingListSerializable.add( getValue to (restoreValue as (Serializable)->Unit))
+    fun <T : Serializable> saveStateSerial(getValue: () -> T, restoreValue: (T) -> Unit) =
+        savingListSerializable.add(getValue to (restoreValue as (Serializable) -> Unit))
 
 
+    fun <T : Parcelable> ConflatedState<T>.saveState() = apply { saveState({ value }, { parcl -> value = parcl }) }
 
-    fun <T:Parcelable> ConflatedState<T>.saveState() = apply { saveState( {value}, { parcl -> value = parcl }) }
 
-
-    fun <T:Serializable> ConflatedState<T>.saveStateSerial() = apply { saveStateSerial( {value}, { serial -> value = serial }) }
-
+    fun <T : Serializable> ConflatedState<T>.saveStateSerial() =
+        apply { saveStateSerial({ value }, { serial -> value = serial }) }
 
 
     @CallSuper
@@ -108,4 +155,4 @@ open class BaseCoordinator(
 
 }
 
-interface ErrorHandler:(Throwable)->Unit
+interface ErrorHandler : (Throwable) -> Unit

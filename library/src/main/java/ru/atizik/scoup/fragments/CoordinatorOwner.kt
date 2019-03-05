@@ -4,21 +4,22 @@ import android.arch.lifecycle.GenericLifecycleObserver
 import android.arch.lifecycle.Lifecycle
 import android.arch.lifecycle.LifecycleOwner
 import android.os.Bundle
-import android.os.Parcelable
 import android.support.v4.app.Fragment
-import android.support.v4.app.FragmentManager
+import io.reactivex.Observable
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.channels.consumeEach
+import io.reactivex.functions.Consumer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelChildren
 import ru.atizik.scoup.ConflatedState
-import ru.atizik.scoup.Lce
 import ru.atizik.scoup.di.getCoordinatorInstance
 import ru.atizik.scoup.viewmodel.BaseCoordinator
 import ru.atizik.scoup.viewmodel.DisposableScope
+import ru.atizik.scoup.viewmodel.MvState
+import ru.atizik.scoup.viewmodel.StateCoordinator
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.coroutineContext
 
 //TODO:Document
 interface CoordinatorOwner<out V : BaseCoordinator>:LateinitFragment {
@@ -29,11 +30,29 @@ interface CoordinatorOwner<out V : BaseCoordinator>:LateinitFragment {
     fun <T> ConflatedState<T>.observe(viewLifecycle: Lifecycle = fragmentDelegate.viewLifecycleOwner.lifecycle, coroutineContext: CoroutineContext = (fragmentDelegate as CoroutineScope).coroutineContext) =
         observe(viewLifecycle,compDisp, coroutineContext)
 
+    fun <T> Observable<T>.subscribeLifecycle(
+        lifecycleOwner: LifecycleOwner? = null,
+        subscriber: (T) -> Unit
+    ): Disposable {
+        if (lifecycleOwner == null) {
+            return observeOn(AndroidSchedulers.mainThread()).subscribe(subscriber).disposeOnClear()
+        }
 
+        val lifecycleAwareObserver = MvRxLifecycleAwareObserver(
+            lifecycleOwner,
+            alwaysDeliverLastValueWhenUnlocked = true,
+            onNext = Consumer<T> { subscriber(it) }
+        )
+        return observeOn(AndroidSchedulers.mainThread()).subscribeWith(lifecycleAwareObserver).disposeOnClear()
+    }
 
+    fun Disposable.disposeOnClear(): Disposable {
+        coordinator.disposable.add(this)
+        return this
+    }
 }
 
-class CoordinatorOwnerImpl<out V : BaseCoordinator>(
+open class CoordinatorOwnerImpl<out V : BaseCoordinator>(
     clazz: Class<V>
 ) : FragmentDelegateFull(), CoordinatorOwner<V> {
     override val compDisp: CompositeDisposable = CompositeDisposable()
@@ -80,6 +99,8 @@ class CoordinatorOwnerImpl<out V : BaseCoordinator>(
     }
 }
 
+
+
 fun <T : Disposable> T.attachToScope(fragment: Fragment): T {
     fragment.lifecycle.addObserver(GenericLifecycleObserver { s, e ->
         if (e == Lifecycle.Event.ON_DESTROY && fragment.isRemovingCompat()) {
@@ -92,3 +113,15 @@ fun <T : Disposable> T.attachToScope(fragment: Fragment): T {
 fun Fragment.isRemovingCompat() = isRemoving || anyParentIsRemoving()
 
 fun Fragment.anyParentIsRemoving(): Boolean = parentFragment?.let { it.anyParentIsRemoving() || it.isRemoving } ?: false
+
+
+
+interface CoordinatorOwnerState<S : MvState, out V : StateCoordinator<S>>:CoordinatorOwner<V> {
+    fun subscribe(subscriber: (S) -> Unit) = coordinator.stateObservable.subscribeLifecycle(fragmentDelegate.viewLifecycleOwner, subscriber)
+
+    fun <C> withState(block: (S) -> C) = block(coordinator.state)
+}
+
+class CoordinatorOwnerStateImpl<S : MvState, out V : StateCoordinator<S>>(
+    clazz: Class<V>
+) : CoordinatorOwnerState<S, V>, CoordinatorOwnerImpl<V>(clazz)

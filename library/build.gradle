@@ -44,6 +44,7 @@ dependencies {
     //Coroutines
     api 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.0.1'
     api 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.0.1'
+    api 'org.jetbrains.kotlinx:kotlinx-coroutines-rx2:1.0.1'
     //Lifecycle
     api 'android.arch.lifecycle:common-java8:1.1.1'
 
@@ -72,7 +73,7 @@ publish {
     groupId = 'ru.atizik'
     repoName = 'Scoup'
     artifactId = 'scoup'
-    publishVersion = '0.6.4'
+    publishVersion = '0.7.0-alpha01'
     desc = 'Scope oriented framework for Android development'
     website = 'https://github.com/ATizik/scoup'
 }
