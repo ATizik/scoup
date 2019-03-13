@@ -63,7 +63,8 @@ Implement ArgumentReceiver in this fragment if you want to inject an argument in
 
 
 4. Implement Coordinator like this:
-```class ExampleCoordinator @Inject constructor(errorHandler: ErrorHandler) : BaseCoordinator(errorHandler) {
+```
+class ExampleCoordinator @Inject constructor(errorHandler: ErrorHandler) : BaseCoordinator(errorHandler) {
 
 }
 ```
