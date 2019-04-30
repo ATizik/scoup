@@ -1,6 +1,7 @@
 package com.atizik.scoupexample
 
 import android.app.Application
+import ru.atizik.scoup.SingleEvent
 import ru.atizik.scoup.di.bindInstance
 import ru.atizik.scoup.di.module
 import ru.atizik.scoup.fragments.ScopeCounter
@@ -11,6 +12,7 @@ import toothpick.configuration.Configuration
 import toothpick.registries.FactoryRegistryLocator
 import toothpick.registries.MemberInjectorRegistryLocator
 import toothpick.smoothie.module.SmoothieApplicationModule
+import java.util.*
 
 class ScoupApplication : Application() {
     override fun onCreate() {
@@ -30,9 +32,7 @@ class ScoupApplication : Application() {
         val mod = module {
             bindInstance<ErrorHandler> {
                 object : ErrorHandler {
-                    override fun invoke(p1: Throwable) {
-
-                    }
+                    override val errorsEvent: SingleEvent<ArrayDeque<Throwable>> = SingleEvent()
                 }
             }
 
