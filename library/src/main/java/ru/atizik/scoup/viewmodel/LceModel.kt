@@ -34,24 +34,24 @@ interface DisposableScope:CoroutineScope {
 }
 
 //TODO: Document
-interface LceModel:DisposableScope {
+interface LceModel:DisposableScope,ErrorHandler {
     @SchedulerSupport(SchedulerSupport.NONE)
     fun <T : Any> Single<T>.subscribeBy(
         onError: (Throwable) -> Unit = {},
         onSuccess: (T) -> Unit = {}
-    ) = subscribe({ onSuccess(it) }, { onError(it) }).addTo(disposable)
+    ) = doOnError(::push).subscribe({ onSuccess(it) }, { onError(it) }).addTo(disposable)
 
     @SchedulerSupport(SchedulerSupport.NONE)
     fun <T : Any> Observable<T>.subscribeBy(
         onError: (Throwable) -> Unit = {},
         onNext: (T) -> Unit = {}
-    ) = subscribe({ onNext(it) }, { onError(it) }).addTo(disposable)
+    ) = doOnError(::push).subscribe({ onNext(it) }, { onError(it) }).addTo(disposable)
 
     @SchedulerSupport(SchedulerSupport.NONE)
     fun Completable.subscribeBy(
         onError: (Throwable) -> Unit = {},
         onComplete: () -> Unit = {}
-    ) = subscribe({ onComplete() }, { onError(it) }).addTo(disposable)
+    ) = doOnError(::push).subscribe({ onComplete() }, { onError(it) }).addTo(disposable)
 
     @SchedulerSupport(SchedulerSupport.NONE)
     fun <T : Any> Single<T>.toLce(lce: ConflatedState<Lce<T>>) =
