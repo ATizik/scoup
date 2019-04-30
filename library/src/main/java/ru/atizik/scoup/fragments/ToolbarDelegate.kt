@@ -87,7 +87,9 @@ class ToolbarDelegateImpl(override var toolbarBuilder: (Toolbar.() -> Unit)? = n
     }
 
     override fun onDestroy(owner: LifecycleOwner) {
-        (toolbar.parent as? ViewGroup)?.removeView(toolbar)
+        if (::toolbar.isInitialized) {
+            (toolbar.parent as? ViewGroup)?.removeView(toolbar)
+        }
     }
 }
 
