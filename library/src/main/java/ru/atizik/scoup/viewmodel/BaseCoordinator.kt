@@ -13,7 +13,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import ru.atizik.scoup.ConflatedState
 import ru.atizik.scoup.Lce
+import ru.atizik.scoup.SingleEvent
 import java.io.Serializable
+import java.util.*
 import kotlin.coroutines.CoroutineContext
 
 
@@ -72,13 +74,13 @@ open class StateCoordinator<T : MvState>(
 open class BaseCoordinator(
     private val errorHandler: ErrorHandler,
     override val coroutineContext: CoroutineContext = SupervisorJob()
-) : Disposable, CoroutineScope, DisposableScope, LceModel {
+) : Disposable, CoroutineScope, DisposableScope, LceModel, ErrorHandler by errorHandler {
 
     final override val disposable = CompositeDisposable()
     private val savingListParcelable: MutableList<Pair<() -> Parcelable, (Parcelable) -> Unit>> = mutableListOf()
     private val savingListSerializable: MutableList<Pair<() -> Serializable, (Serializable) -> Unit>> = mutableListOf()
 
-    private val lceModel = object : LceModel {
+    private val lceModel = object : LceModel, ErrorHandler by errorHandler {
         override val coroutineContext: CoroutineContext = this@BaseCoordinator.coroutineContext
         override val disposable: CompositeDisposable = this@BaseCoordinator.disposable
     }
@@ -87,19 +89,19 @@ open class BaseCoordinator(
 
     override fun <T : Any> Single<T>.toLce(lce: ConflatedState<Lce<T>>): Disposable {
         with(lceModel) {
-            return doOnError(errorHandler).toLce(lce)
+            return doOnError(errorHandler::push).toLce(lce)
         }
     }
 
     override fun <T : Any> Observable<T>.toLce(lce: ConflatedState<Lce<T>>): Disposable {
         with(lceModel) {
-            return doOnError(errorHandler).toLce(lce)
+            return doOnError(errorHandler::push).toLce(lce)
         }
     }
 
     override fun Completable.toLce(lce: ConflatedState<Lce<Unit>>): Disposable {
         with(lceModel) {
-            return doOnError(errorHandler).toLce(lce)
+            return doOnError(errorHandler::push).toLce(lce)
         }
     }
 
@@ -155,4 +157,9 @@ open class BaseCoordinator(
 
 }
 
-interface ErrorHandler : (Throwable) -> Unit
+interface ErrorHandler {
+    val errorsEvent: SingleEvent<ArrayDeque<Throwable>>
+    fun push(t: Throwable) {
+        errorsEvent.value = errorsEvent.value.apply { push(t) }
+    }
+}
