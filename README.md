@@ -18,6 +18,60 @@ Since the introduction of Android Architecture Components we saw an increase in 
 4. BaseFragment built on delegates principle - keep your BaseFragment thin and keep everything flexible through configurable delegates. Just use implementation by delegation feature if you don't want to inherit from BaseFragment, applying exactly as much delegates as you need.
 5. onSaveInstanceState/onRestoreInstanceState methods exposed to Coordinators
 
+
+## Usage:
+1. Setup Application class, importing `appScope` from the library:
+```
+        val toothpickConfig = if (BuildConfig.DEBUG) {
+            Configuration.forDevelopment().disableReflection()
+        } else
+            Configuration.forProduction().disableReflection()
+        Toothpick.setConfiguration(toothpickConfig)
+        FactoryRegistryLocator.setRootRegistry(FactoryRegistry())
+        MemberInjectorRegistryLocator.setRootRegistry(MemberInjectorRegistry())
+
+        val appScope = Toothpick.openScope(appScope)
+        appScope.installModules(
+                SmoothieApplicationModule(this),
+                ApplicationModule()
+                // Application level modules
+        )
+        Toothpick.inject(Application, appScope)
+```
+
+2. Setup Application module, for example:
+```ApplicationModule() = module {
+    ...
+    bindInstance<ErrorHandler> {
+        object : ErrorHandler {
+            override fun invoke(p1: Throwable) {
+                if (BuildConfig.DEBUG) {
+                    Log.e("ErrorHandler", p1.message)
+                }
+            }
+        }
+    }
+    ``````
+``````
+
+3. Setup BaseFragment, using either MVI or MVVM pattern. 
+Look for example here: https://github.com/ATizik/scoup/blob/master/library/src/main/java/ru/atizik/scoup/fragments/BaseFragment.kt
+Do note, that you can inherit them, but it is recommended to write your own by example in case you ever need to inherit some other base fragment class.
+
+Implement ArgumentReceiver in this fragment if you want to inject an argument in Coordinator constructor. Do note that this argument in most cases should be some kind of id that, for example, represents data in injected alongside it repository
+
+
+
+4. Implement Coordinator like this:
+```
+class ExampleCoordinator @Inject constructor(errorHandler: ErrorHandler) : BaseCoordinator(errorHandler) {
+
+}
+```
+Override onSaveInstanceState/onRestoreInstanceState inside Coordinator to save non-UI data across process death
+
+
+
 Coming in future versions:
 1. Data scoping(app session, user session etc.) with reactive bindings to ConflatedState
 2. More delegates
