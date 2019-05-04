@@ -1,7 +1,7 @@
 package ru.atizik.scoup.di
 
 import android.os.Parcelable
-import android.support.v4.app.Fragment
+import androidx.fragment.app.Fragment
 import ru.atizik.scoup.fragments.SCOUP_ARG
 import ru.atizik.scoup.fragments.ScopeCounter
 import ru.atizik.scoup.viewmodel.BaseCoordinator

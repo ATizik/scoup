@@ -1,14 +1,14 @@
 package ru.atizik.scoup.fragments
 
-import android.arch.lifecycle.LifecycleOwner
-import android.support.constraint.ConstraintLayout
-import android.support.constraint.ConstraintSet
-import android.support.v4.app.Fragment
-import android.support.v4.widget.NestedScrollView
-import android.support.v7.widget.Toolbar
+import androidx.lifecycle.LifecycleOwner
+import androidx.fragment.app.Fragment
+import androidx.core.widget.NestedScrollView
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ScrollView
+import androidx.appcompat.widget.Toolbar
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.constraintlayout.widget.ConstraintSet
 import ru.atizik.scoup.R
 import java.util.*
 
