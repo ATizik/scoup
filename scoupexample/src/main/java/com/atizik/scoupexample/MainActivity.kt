@@ -13,7 +13,9 @@ import android.view.ViewGroup
 import android.widget.Toast
 import kotlinx.android.parcel.Parcelize
 import kotlinx.android.synthetic.main.first_fragment.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import ru.atizik.scoup.ConflatedState
 import ru.atizik.scoup.Lce
@@ -64,12 +66,12 @@ class MainFragment : BaseFragment<MainCoordinator>(MainCoordinator::class.java) 
     }
 }
 
-data class MainState(val resource: Lce<String> = Lce.Success("data not loaded")): MvState
+data class MainState(val resource: Lce<String> = Lce.Success("data not loaded")) : MvState
 
 class MainCoordinator @Inject constructor(errorHandler: ErrorHandler) : BaseCoordinator(errorHandler)
 
 
-data class FirstState(val resource: Lce<String> = Lce.Success("data not loaded")): MvState
+data class FirstState(val resource: Lce<String> = Lce.Success("data not loaded")) : MvState
 
 class FirstFragment : BaseFragmentState<FirstState, FirstCoordinator>(
     FirstCoordinator::class.java
@@ -88,13 +90,15 @@ class FirstFragment : BaseFragmentState<FirstState, FirstCoordinator>(
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        coordinator
-            .conflatedState
-            .observe()
-            .onEach { textView.text = it.toString() }
-            .subscribe()
+        launch(Dispatchers.Main) {
+            coordinator
+                .conflatedState
+                .observe()
+                .collect { textView.text = it.toString() }
+        }
 
-        subscribe{
+
+        subscribe {
             it.resource.onSuccess {
                 Toast.makeText(context!!, "Data loaded", Toast.LENGTH_LONG).show()
             }
@@ -125,9 +129,10 @@ class SecondFragment : BaseFragment<SecondCoordinator>(SecondCoordinator::class.
     }
 }
 
-class FirstCoordinator @Inject constructor(errorHandler: ErrorHandler) : StateCoordinator<FirstState>(FirstState(), errorHandler) {
-    val conflatedState:ConflatedState<Int> = ConflatedState(1).saveStateSerial()
-    val conflatedStateLce:ConflatedState<Lce<Int>> = ConflatedState(Lce.Loading())
+class FirstCoordinator @Inject constructor(errorHandler: ErrorHandler) :
+    StateCoordinator<FirstState>(FirstState(), errorHandler) {
+    val conflatedState: ConflatedState<Int> = ConflatedState(1).saveStateSerial()
+    val conflatedStateLce: ConflatedState<Lce<Int>> = ConflatedState(Lce.Loading())
     val some = getFlowCoordinatorInstance<FlowCoordinator>(appScope, flowTag)
 
     fun onClick() {
@@ -150,7 +155,7 @@ class FlowCoordinator @Inject constructor(errorHandler: ErrorHandler) : BaseCoor
     }
 }
 
-data class FlowState(val todo: Unit = Unit): MvState
+data class FlowState(val todo: Unit = Unit) : MvState
 
 class SecondCoordinator @Inject constructor(errorHandler: ErrorHandler, val secondArgument: SecondArgument) :
     BaseCoordinator(errorHandler) {
