@@ -1,10 +1,10 @@
 package ru.atizik.scoup
 
-import android.arch.lifecycle.DefaultLifecycleObserver
-import android.arch.lifecycle.GenericLifecycleObserver
-import android.arch.lifecycle.Lifecycle
-import android.arch.lifecycle.LifecycleObserver
-import android.arch.lifecycle.LifecycleOwner
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.GenericLifecycleObserver
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import android.os.Parcelable
 import io.reactivex.disposables.CompositeDisposable
 import kotlinx.coroutines.*

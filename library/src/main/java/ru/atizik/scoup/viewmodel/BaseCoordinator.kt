@@ -2,7 +2,7 @@ package ru.atizik.scoup.viewmodel
 
 import android.os.Bundle
 import android.os.Parcelable
-import android.support.annotation.CallSuper
+import androidx.annotation.CallSuper
 import io.reactivex.Completable
 import io.reactivex.Observable
 import io.reactivex.Single
