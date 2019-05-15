@@ -1,6 +1,6 @@
 package ru.atizik.scoup
 
-import android.support.annotation.CheckResult
+import androidx.annotation.CheckResult
 import io.reactivex.annotations.CheckReturnValue
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*

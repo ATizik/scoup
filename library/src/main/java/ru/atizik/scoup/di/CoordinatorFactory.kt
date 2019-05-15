@@ -1,7 +1,7 @@
 package ru.atizik.scoup.di
 
 import android.os.Parcelable
-import android.support.v4.app.Fragment
+import androidx.fragment.app.Fragment
 import io.reactivex.annotations.CheckReturnValue
 import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.addTo
