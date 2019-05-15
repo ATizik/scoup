@@ -2,8 +2,8 @@ package ru.atizik.scoup.fragments
 
 import android.content.Context
 import android.os.Bundle
-import android.support.v4.app.Fragment
-import android.support.v4.app.FragmentManager
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
 import android.view.View
 
 open class FragmentDelegateFull : LateinitFragment, FragmentManager.FragmentLifecycleCallbacks() {

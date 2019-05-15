@@ -9,8 +9,6 @@ import ru.atizik.scoup.fragments.appScope
 import ru.atizik.scoup.viewmodel.ErrorHandler
 import toothpick.Toothpick
 import toothpick.configuration.Configuration
-import toothpick.registries.FactoryRegistryLocator
-import toothpick.registries.MemberInjectorRegistryLocator
 import toothpick.smoothie.module.SmoothieApplicationModule
 import java.util.*
 
@@ -22,12 +20,10 @@ class ScoupApplication : Application() {
 
     private fun toothpickInit() {
         val toothpickConfig = if (BuildConfig.DEBUG) {
-            Configuration.forDevelopment().disableReflection()//configure annotation processor
+            Configuration.forDevelopment()
         } else
-            Configuration.forProduction().disableReflection()
+            Configuration.forProduction()
         Toothpick.setConfiguration(toothpickConfig)
-        FactoryRegistryLocator.setRootRegistry(FactoryRegistry())
-        MemberInjectorRegistryLocator.setRootRegistry(MemberInjectorRegistry())
 
         val mod = module {
             bindInstance<ErrorHandler> {
