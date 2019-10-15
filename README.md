@@ -1,5 +1,7 @@
 There is no active development of this project. If you need an alternative, please look at: https://github.com/square/workflow 
+
 It has a Swift version, Kotlin Multiplatform coming in the future, and overall has better quality and uses more refined solutions.
+
 If you need a more direct translation from this library, check this one: https://github.com/airbnb/MvRx
 
 # scoup
