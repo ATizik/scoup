@@ -124,7 +124,7 @@ class SecondFragment : BaseFragment<SecondCoordinator>(SecondCoordinator::class.
     }
 }
 
-class FirstCoordinator @Inject constructor(errorHandler: ErrorHandler) : StateCoordinator<FirstState>(FirstState(), errorHandler) {
+class FirstCoordinator @Inject constructor() : StateCoordinator<FirstState>(FirstState()) {
     val conflatedState:ConflatedState<Int> = ConflatedState(1).saveStateSerial()
     val conflatedStateLce:ConflatedState<Lce<Int>> = ConflatedState(Lce.Loading())
     val some = getFlowCoordinatorInstance<FlowCoordinator>(appScope, flowTag)

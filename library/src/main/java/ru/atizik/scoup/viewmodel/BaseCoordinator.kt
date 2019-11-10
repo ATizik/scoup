@@ -25,7 +25,7 @@ private const val SERIAL = "__SCOUP_SERIAL"
 
 open class StateCoordinator<T : MvState>(
     initialState: T,
-    errorHandler: ErrorHandler,
+    errorHandler: ErrorHandler = DefaultErrorHandler(),
     coroutineContext: CoroutineContext = SupervisorJob(),
     private val debugMode: Boolean = false
 ) : BaseCoordinator(errorHandler, coroutineContext) {
@@ -162,4 +162,8 @@ interface ErrorHandler {
     fun push(t: Throwable) {
         errorsEvent.value = errorsEvent.value.apply { push(t) }
     }
+}
+
+class DefaultErrorHandler : ErrorHandler {
+    override val errorsEvent: SingleEvent<ArrayDeque<Throwable>> = SingleEvent()
 }
